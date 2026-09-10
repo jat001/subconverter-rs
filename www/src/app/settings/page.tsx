@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { readSettingsFile, writeSettingsFile } from '@/lib/api-client';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import CodeEditor from '@/components/CodeEditor';
 
 // Settings interface based on pref.yml structure
