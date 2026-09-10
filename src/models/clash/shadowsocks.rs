@@ -19,18 +19,18 @@ pub struct ClashShadowsocks {
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub plugin: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub plugin_opts: Option<BTreeMap<String, serde_yaml::Value>>,
+    pub plugin_opts: Option<BTreeMap<String, yaml_serde::Value>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub udp_over_tcp: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub udp_over_tcp_version: Option<u8>,
 }
 
-fn yaml_value_to_string(value: &serde_yaml::Value) -> String {
+fn yaml_value_to_string(value: &yaml_serde::Value) -> String {
     match value {
-        serde_yaml::Value::String(s) => s.clone(),
-        serde_yaml::Value::Bool(b) => b.to_string(),
-        serde_yaml::Value::Number(n) => n.to_string(),
+        yaml_serde::Value::String(s) => s.clone(),
+        yaml_serde::Value::Bool(b) => b.to_string(),
+        yaml_serde::Value::Number(n) => n.to_string(),
         _ => String::new(),
     }
 }
@@ -57,7 +57,7 @@ impl ClashShadowsocks {
         let is_obfs = matches!(plugin.as_deref(), Some("obfs-local") | Some("simple-obfs"));
         let plugin_opts = self.plugin_opts.filter(|_| plugin.is_some()).map(|opts| {
             let mut parts: Vec<String> = Vec::new();
-            let mut ordered: Vec<(String, serde_yaml::Value)> = opts.into_iter().collect();
+            let mut ordered: Vec<(String, yaml_serde::Value)> = opts.into_iter().collect();
             ordered.sort_by(|a, b| a.0.cmp(&b.0));
             for (key, value) in ordered {
                 let key = if is_obfs {
@@ -70,11 +70,11 @@ impl ClashShadowsocks {
                     key
                 };
                 match value {
-                    serde_yaml::Value::Bool(true) if key == "mux" => {
+                    yaml_serde::Value::Bool(true) if key == "mux" => {
                         parts.push("mux=4".to_string())
                     }
-                    serde_yaml::Value::Bool(true) => parts.push(key),
-                    serde_yaml::Value::Bool(false) => {}
+                    yaml_serde::Value::Bool(true) => parts.push(key),
+                    yaml_serde::Value::Bool(false) => {}
                     other => {
                         let value = yaml_value_to_string(&other);
                         if !value.is_empty() {
@@ -120,7 +120,7 @@ impl From<&Proxy> for ClashShadowsocks {
             // Only emit plugin-opts when a plugin is actually configured;
             // an empty `plugin-opts: {}` breaks some Clash clients.
             if let Some(plugin_opts) = ss.plugin_opts.clone().filter(|_| plugin.is_some()) {
-                let mut opts: BTreeMap<String, serde_yaml::Value> = BTreeMap::new();
+                let mut opts: BTreeMap<String, yaml_serde::Value> = BTreeMap::new();
 
                 for opt in plugin_opts.split(';') {
                     let opt = opt.trim();
@@ -140,14 +140,14 @@ impl From<&Proxy> for ClashShadowsocks {
                     };
                     let value = match parts.next() {
                         // Bare flags such as `tls` mean "enabled"
-                        None => serde_yaml::Value::Bool(true),
+                        None => yaml_serde::Value::Bool(true),
                         Some(v) => match v.trim() {
-                            "true" => serde_yaml::Value::Bool(true),
-                            "false" => serde_yaml::Value::Bool(false),
+                            "true" => yaml_serde::Value::Bool(true),
+                            "false" => yaml_serde::Value::Bool(false),
                             // Clash expects `mux` to be a boolean; the ss plugin
                             // option syntax uses a connection count
-                            v if key == "mux" => serde_yaml::Value::Bool(v != "0"),
-                            v => serde_yaml::Value::String(v.to_string()),
+                            v if key == "mux" => yaml_serde::Value::Bool(v != "0"),
+                            v => yaml_serde::Value::String(v.to_string()),
                         },
                     };
                     opts.insert(key.to_string(), value);

@@ -138,12 +138,12 @@ mod tests {
     use super::*;
 
     fn parse_one(yaml: &str) -> Proxy {
-        let clash: ClashProxy = serde_yaml::from_str(yaml).expect("entry must parse");
+        let clash: ClashProxy = yaml_serde::from_str(yaml).expect("entry must parse");
         clash.into_proxy().expect("known proxy type")
     }
 
     fn emit(proxy: &Proxy) -> String {
-        serde_yaml::to_string(&ClashProxy::from_proxy(proxy).expect("expressible")).unwrap()
+        yaml_serde::to_string(&ClashProxy::from_proxy(proxy).expect("expressible")).unwrap()
     }
 
     /// Issue #40: ws-opts, tls, udp and servername survive parsing.
@@ -231,7 +231,7 @@ mod tests {
         for entry in entries {
             let first = parse_one(entry);
             let emitted1 = emit(&first);
-            let second: ClashProxy = serde_yaml::from_str(&emitted1)
+            let second: ClashProxy = yaml_serde::from_str(&emitted1)
                 .unwrap_or_else(|e| panic!("re-parse failed for {}: {}", entry, e));
             let second = second.into_proxy().expect("known type");
             let emitted2 = emit(&second);

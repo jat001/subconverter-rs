@@ -11,9 +11,9 @@ use crate::{
     utils::http::parse_proxy,
 };
 
-// 为serde_yaml::Value添加默认值函数
-fn default_yaml_value() -> serde_yaml::Value {
-    serde_yaml::Value::String(String::new())
+// 为yaml_serde::Value添加默认值函数
+fn default_yaml_value() -> yaml_serde::Value {
+    yaml_serde::Value::String(String::new())
 }
 
 // 为常用默认值添加函数
@@ -205,7 +205,7 @@ pub struct ProxyGroupsSettings {
 pub struct TemplateVariable {
     pub key: String,
     #[serde(default = "default_yaml_value")]
-    pub value: serde_yaml::Value,
+    pub value: yaml_serde::Value,
 }
 
 impl Default for TemplateVariable {

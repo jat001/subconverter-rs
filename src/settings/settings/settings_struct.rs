@@ -11,7 +11,7 @@ use std::sync::RwLock;
 
 use log::debug;
 use log::info;
-use serde_yaml;
+use yaml_serde;
 use toml;
 
 use crate::models::cron::CronTaskConfigs;
@@ -414,7 +414,7 @@ impl Settings {
         // Try to parse as YAML first
         if content.contains("common:") {
             let mut yaml_settings: crate::settings::settings::yaml_settings::YamlSettings =
-                serde_yaml::from_str(&content)?;
+                yaml_serde::from_str(&content)?;
             yaml_settings.process_imports_and_inis().await?;
 
             let mut _settings = Settings::from(yaml_settings);

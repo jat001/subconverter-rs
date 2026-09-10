@@ -34,11 +34,11 @@ pub struct ParseSettings {
     pub request_header: Option<HashMap<CaseInsensitiveString, String>>,
 
     /// JavaScript runtime - optional depending on feature flags
-    #[cfg(feature = "js_runtime")]
+    #[cfg(feature = "js-runtime")]
     pub js_runtime: Option<()>, // Placeholder for actual JS runtime type
 
     /// JavaScript context - optional depending on feature flags
-    #[cfg(feature = "js_runtime")]
+    #[cfg(feature = "js-runtime")]
     pub js_context: Option<()>, // Placeholder for actual JS context type
 }
 
@@ -64,9 +64,9 @@ impl Default for ParseSettings {
             sub_info: None,
             authorized: !settings.api_access_token.is_empty(),
             request_header: None,
-            #[cfg(feature = "js_runtime")]
+            #[cfg(feature = "js-runtime")]
             js_runtime: None,
-            #[cfg(feature = "js_runtime")]
+            #[cfg(feature = "js-runtime")]
             js_context: None,
         }
     }

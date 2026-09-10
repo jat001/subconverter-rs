@@ -338,7 +338,7 @@ impl SubResponse {
 
 /// Handler for subscription conversion
 pub async fn sub_process(
-    req_url: Option<String>,
+    _req_url: Option<String>,
     query: SubconverterQuery,
 ) -> Result<SubResponse, Box<dyn std::error::Error>> {
     let mut global = Settings::current();

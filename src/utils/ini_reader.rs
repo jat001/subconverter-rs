@@ -4,8 +4,7 @@
 //! similar to the C++ INIReader class in the original subconverter.
 
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self};
 use std::path::Path;
 
 use super::{file_exists, file_get_async};

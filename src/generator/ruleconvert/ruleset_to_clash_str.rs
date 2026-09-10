@@ -7,7 +7,7 @@ use crate::utils::string::{find_str, starts_with, trim};
 use crate::Settings;
 use lazy_static::lazy_static;
 use log::warn;
-use serde_yaml::Value as YamlValue;
+use yaml_serde::Value as YamlValue;
 use std::collections::HashSet;
 
 use super::common::transform_rule_to_common;

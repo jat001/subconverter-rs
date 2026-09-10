@@ -1,4 +1,4 @@
-use serde_yaml;
+use yaml_serde;
 use std::collections::HashMap;
 use toml;
 
@@ -77,7 +77,7 @@ impl ExternalSettings {
 
         // Try YAML format first
         if content.contains("custom:") {
-            let mut yaml_settings: YamlExternalSettings = serde_yaml::from_str(content)?;
+            let mut yaml_settings: YamlExternalSettings = yaml_serde::from_str(content)?;
             yaml_settings.process_imports().await?;
             // Convert to ExternalSettings
             let config = Self::from(yaml_settings);

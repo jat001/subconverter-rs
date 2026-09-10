@@ -323,7 +323,7 @@ pub fn convert_proxy_groups(
 /// let clash_groups = convert_proxy_groups(&groups, None);
 ///
 /// // Serialize to YAML
-/// let yaml = serde_yaml::to_string(&clash_groups).unwrap();
+/// let yaml = yaml_serde::to_string(&clash_groups).unwrap();
 /// println!("{}", yaml);
 /// ```
 pub fn example_clash_groups() -> Vec<ClashProxyGroup> {

@@ -1,8 +1,8 @@
 use crate::settings::Settings;
 use crate::utils::file::file_exists;
-use crate::utils::http::{parse_proxy, HttpResponse, ProxyConfig};
+use crate::utils::http::{parse_proxy, HttpResponse};
 use crate::utils::http::{web_patch_async, web_post_async};
-use crate::utils::ini_reader::{IniReader, IniReaderError};
+use crate::utils::ini_reader::IniReader;
 use case_insensitive_string::CaseInsensitiveString;
 use serde_json::json;
 use std::collections::HashMap;

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 #[cfg(not(target_arch = "wasm32"))]
 mod platform {
     pub use crate::utils::http_std::{
-        get_sub_info_from_header, get_sub_info_from_response, parse_proxy, web_get, web_get_async,
+        parse_proxy, web_get, web_get_async,
         web_patch_async, web_post_async, HttpError, HttpResponse, ProxyConfig,
     };
 }

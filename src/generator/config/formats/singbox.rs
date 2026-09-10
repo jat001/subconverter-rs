@@ -461,7 +461,7 @@ pub fn proxy_to_singbox(
                         obj.insert("auth_str".to_string(), JsonValue::String(auth_str.to_string()));
 
                         // Create a temporary String
-                        let auth_str_value = auth_str.clone();
+                        let auth_str_value = auth_str;
                         obj.insert(
                             "auth".to_string(),
                             JsonValue::String(base64_encode(&auth_str_value)),

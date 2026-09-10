@@ -81,12 +81,12 @@ pub fn parse_proxy(proxy_str: &str) -> ProxyConfig {
 /// * `Err(HttpError)` - Error details if the request failed
 pub async fn web_get_async(
     url: &str,
-    proxy_config: &ProxyConfig,
+    _proxy_config: &ProxyConfig,
     headers: Option<&HashMap<CaseInsensitiveString, String>>,
 ) -> Result<HttpResponse, HttpError> {
     // Build client with proxy if specified
 
-    let mut client_builder = Client::builder().timeout(Duration::from_secs(DEFAULT_TIMEOUT));
+    let client_builder = Client::builder().timeout(Duration::from_secs(DEFAULT_TIMEOUT));
 
     // if let Some(proxy) = &proxy_config.proxy {
     //     if !proxy.is_empty() {
@@ -300,10 +300,10 @@ pub fn get_sub_info_from_response(
 pub async fn web_post_async(
     url: &str,
     data: String,
-    proxy_config: &ProxyConfig,
+    _proxy_config: &ProxyConfig,
     headers: Option<&HashMap<CaseInsensitiveString, String>>,
 ) -> Result<HttpResponse, HttpError> {
-    let mut client_builder = Client::builder().timeout(Duration::from_secs(DEFAULT_TIMEOUT));
+    let client_builder = Client::builder().timeout(Duration::from_secs(DEFAULT_TIMEOUT));
 
     // TODO: Implement proxy support for awc if needed, similar to commented-out
     // code in web_get_async if let Some(proxy) = &proxy_config.proxy {
@@ -371,10 +371,10 @@ pub async fn web_post_async(
 pub async fn web_patch_async(
     url: &str,
     data: String,
-    proxy_config: &ProxyConfig,
+    _proxy_config: &ProxyConfig,
     headers: Option<&HashMap<CaseInsensitiveString, String>>,
 ) -> Result<HttpResponse, HttpError> {
-    let mut client_builder = Client::builder().timeout(Duration::from_secs(DEFAULT_TIMEOUT));
+    let client_builder = Client::builder().timeout(Duration::from_secs(DEFAULT_TIMEOUT));
 
     // TODO: Implement proxy support for awc if needed
 

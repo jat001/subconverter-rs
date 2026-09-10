@@ -1,5 +1,4 @@
 use log::{debug, info};
-use std::cmp::Ordering;
 
 use crate::models::{
     extra_settings::ExtraSettings,
@@ -7,7 +6,7 @@ use crate::models::{
     regex_match_config::RegexMatchConfigs,
 };
 use crate::utils::{
-    matcher::{apply_matcher, reg_find},
+    matcher::apply_matcher,
     reg_replace,
     string::{remove_emoji, trim},
 };

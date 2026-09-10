@@ -2,7 +2,6 @@ use crate::models::{Proxy, ProxyType};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
-use std::str::FromStr;
 
 lazy_static! {
     static ref GROUPID_REGEX: Regex =
@@ -356,7 +355,7 @@ pub fn compile_rule(rule: &str) -> CompiledRule {
     } else if let Some(captures) = GROUPID_REGEX.captures(rule) {
         sub_rule_str = captures.get(2).map(|m| m.as_str());
         let target = captures.get(1).map_or("", |m| m.as_str());
-        let dir = if rule.starts_with("!!INSERT=") { -1 } else { 1 }; // Apply direction modifier conceptually later
+        let _dir = if rule.starts_with("!!INSERT=") { -1 } else { 1 }; // Apply direction modifier conceptually later
         let (ranges, negate) = parse_range_string(target);
         // The 'dir' multiplier is handled during application, not compilation
         CompiledMatcher::GroupId { ranges, negate }

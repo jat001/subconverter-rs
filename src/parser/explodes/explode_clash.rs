@@ -6,7 +6,7 @@ use crate::{
     },
     parser::yaml::clash::{extract_proxy_entries, ClashProxyYamlInput},
 };
-use serde_yaml::Value;
+use yaml_serde::Value;
 
 /// Parse a Clash YAML configuration into a vector of Proxy objects.
 ///
@@ -15,7 +15,7 @@ use serde_yaml::Value;
 /// is used as a fallback. A malformed node is logged and skipped instead of
 /// discarding the whole subscription.
 pub fn explode_clash(content: &str, nodes: &mut Vec<Proxy>) -> bool {
-    let yaml: Value = match serde_yaml::from_str(content) {
+    let yaml: Value = match yaml_serde::from_str(content) {
         Ok(y) => y,
         Err(e) => {
             log::warn!("Failed to parse Clash YAML: {}", e);
@@ -32,7 +32,7 @@ pub fn explode_clash(content: &str, nodes: &mut Vec<Proxy>) -> bool {
 
     for entry in proxies {
         // Try the typed parser first
-        match serde_yaml::from_value::<ClashProxyYamlInput>(entry.clone()) {
+        match yaml_serde::from_value::<ClashProxyYamlInput>(entry.clone()) {
             Ok(typed) => {
                 if let Some(node) = typed.into_proxy() {
                     nodes.push(node);
@@ -1014,14 +1014,14 @@ mod tests {
     use super::*;
     use crate::generator::yaml::clash::clash_output::ClashProxyOutput;
 
-    fn roundtrip_to_yaml(input: &str) -> Vec<serde_yaml::Value> {
+    fn roundtrip_to_yaml(input: &str) -> Vec<yaml_serde::Value> {
         let mut nodes = Vec::new();
         assert!(explode_clash(input, &mut nodes), "input must parse");
         nodes
             .into_iter()
             .map(|node| {
                 let output = ClashProxyOutput::from(node);
-                serde_yaml::to_value(&output).expect("output must serialize")
+                yaml_serde::to_value(&output).expect("output must serialize")
             })
             .collect()
     }

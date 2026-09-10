@@ -1,8 +1,7 @@
-use std::{cmp::Ordering, str::FromStr};
 
-use crate::{utils::file_get_async, Settings};
+use crate::Settings;
 
-use super::{Proxy, ProxyType, RegexMatchConfig, RegexMatchConfigs};
+use super::{Proxy, RegexMatchConfigs};
 
 /// Settings for subscription export operations
 pub struct ExtraSettings {

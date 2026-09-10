@@ -56,7 +56,7 @@ pub async fn add_nodes(
     link = link.replace("\"", "");
 
     // Handle JavaScript scripts (Not implementing JS support here)
-    #[cfg(feature = "js_runtime")]
+    #[cfg(feature = "js-runtime")]
     if authorized && link.starts_with("script:") {
         // Script processing would go here
         return Err("Script processing not implemented".to_string());

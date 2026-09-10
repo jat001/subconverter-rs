@@ -5,7 +5,7 @@ use crate::generator::yaml::clash::clash_output::ClashProxyOutput;
 use crate::generator::yaml::proxy_group_output::convert_proxy_groups;
 use crate::models::{ExtraSettings, Proxy, ProxyGroupConfigs, ProxyType, RulesetContent};
 use log::error;
-use serde_yaml::{self, Mapping, Sequence, Value as YamlValue};
+use yaml_serde::{self, Mapping, Sequence, Value as YamlValue};
 use std::collections::{HashMap, HashSet};
 
 // Lists of supported protocols and encryption methods for filtering in ClashR
@@ -81,7 +81,7 @@ pub fn proxy_to_clash(
     ext: &mut ExtraSettings,
 ) -> String {
     // Parse the base configuration
-    let mut yaml_node: YamlValue = match serde_yaml::from_str(base_conf) {
+    let mut yaml_node: YamlValue = match yaml_serde::from_str(base_conf) {
         Ok(node) => node,
         Err(e) => {
             error!("Clash base loader failed with error: {}", e);
@@ -105,7 +105,7 @@ pub fn proxy_to_clash(
 
     // If nodelist mode is enabled, just return the YAML node
     if ext.nodelist {
-        return match serde_yaml::to_string(&yaml_node) {
+        return match yaml_serde::to_string(&yaml_node) {
             Ok(result) => result,
             Err(_) => String::new(),
         };
@@ -113,7 +113,7 @@ pub fn proxy_to_clash(
 
     // Handle rule generation if enabled
     if !ext.enable_rule_generator {
-        return match serde_yaml::to_string(&yaml_node) {
+        return match yaml_serde::to_string(&yaml_node) {
             Ok(result) => result,
             Err(_) => String::new(),
         };
@@ -148,7 +148,7 @@ pub fn proxy_to_clash(
 
         // TODO: Implement renderClashScript
         // For now, just return the YAML
-        return match serde_yaml::to_string(&yaml_node) {
+        return match yaml_serde::to_string(&yaml_node) {
             Ok(result) => result,
             Err(_) => String::new(),
         };
@@ -162,7 +162,7 @@ pub fn proxy_to_clash(
         ext.clash_new_field_name,
     );
 
-    let yaml_output = match serde_yaml::to_string(&yaml_node) {
+    let yaml_output = match yaml_serde::to_string(&yaml_node) {
         Ok(result) => result,
         Err(_) => String::new(),
     };
@@ -184,7 +184,7 @@ pub fn proxy_to_clash(
 /// * `ext` - Extra settings for conversion
 pub fn proxy_to_clash_yaml(
     nodes: &mut Vec<Proxy>,
-    yaml_node: &mut serde_yaml::Value,
+    yaml_node: &mut yaml_serde::Value,
     _ruleset_content_array: &Vec<RulesetContent>,
     extra_proxy_group: &ProxyGroupConfigs,
     clash_r: bool,
@@ -289,7 +289,7 @@ pub fn proxy_to_clash_yaml(
     if ext.nodelist {
         let mut provider = YamlValue::Mapping(Mapping::new());
         provider["proxies"] =
-            serde_yaml::to_value(&proxies_json).unwrap_or(YamlValue::Sequence(Vec::new()));
+            yaml_serde::to_value(&proxies_json).unwrap_or(YamlValue::Sequence(Vec::new()));
         *yaml_node = provider;
         return;
     }
@@ -298,7 +298,7 @@ pub fn proxy_to_clash_yaml(
     if let Some(ref mut map) = yaml_node.as_mapping_mut() {
         // Convert JSON proxies array to YAML
         let proxies_yaml_value =
-            serde_yaml::to_value(&proxies_json).unwrap_or(YamlValue::Sequence(Vec::new()));
+            yaml_serde::to_value(&proxies_json).unwrap_or(YamlValue::Sequence(Vec::new()));
         if ext.clash_new_field_name {
             map.insert(YamlValue::String("proxies".to_string()), proxies_yaml_value);
         } else {
@@ -352,7 +352,7 @@ pub fn proxy_to_clash_yaml(
                         if name == &group.name {
                             if let Some(elem) = original_groups.get_mut(i) {
                                 // Convert the group to YAML and replace
-                                if let Ok(group_yaml) = serde_yaml::to_value(&group) {
+                                if let Ok(group_yaml) = yaml_serde::to_value(&group) {
                                     *elem = group_yaml;
                                     replaced = true;
                                     break;
@@ -365,7 +365,7 @@ pub fn proxy_to_clash_yaml(
 
             // If not replaced, add to the list
             if !replaced {
-                if let Ok(group_yaml) = serde_yaml::to_value(&group) {
+                if let Ok(group_yaml) = yaml_serde::to_value(&group) {
                     original_groups.push(group_yaml);
                 }
             }
