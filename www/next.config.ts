@@ -1,27 +1,23 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import type { NextConfig } from "next";
-import webpack from 'webpack';
-import createNextIntlPlugin from 'next-intl/plugin';
+import type { NextConfig } from 'next'
+import createNextIntlPlugin from 'next-intl/plugin'
+import webpack from 'webpack'
 
-const withNextIntl = createNextIntlPlugin();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const withNextIntl = createNextIntlPlugin()
 
 // Detect environments
-const isNetlify = process.env.NETLIFY === 'true' ||
+const isNetlify =
+  process.env.NETLIFY === 'true' ||
   process.env.CONTEXT === 'production' ||
   process.env.NETLIFY_LOCAL === 'true' ||
-  (process.env.DEPLOY_URL && process.env.DEPLOY_URL.includes('netlify'));
+  process.env.DEPLOY_URL?.includes('netlify')
 
-const isVercel = process.env.VERCEL === 'true';
-const isDev = process.env.NODE_ENV === 'development';
+const isVercel = process.env.VERCEL === 'true'
+const isDev = process.env.NODE_ENV === 'development'
 
 // Log environment info
-console.log('✅ Is Netlify environment:', isNetlify);
-console.log('✅ Is Vercel environment:', isVercel);
-console.log('✅ Is Development environment:', isDev);
+console.log('✅ Is Netlify environment:', isNetlify)
+console.log('✅ Is Vercel environment:', isVercel)
+console.log('✅ Is Development environment:', isDev)
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -34,7 +30,7 @@ const nextConfig: NextConfig = {
 
   // Webpack config to support WASM
   webpack: (config, { isServer, dev }) => {
-    console.log(`⚙️ Configuring webpack (isServer: ${isServer}, dev: ${dev})`);
+    console.log(`⚙️ Configuring webpack (isServer: ${isServer}, dev: ${dev})`)
 
     // Support for WebAssembly
     config.experiments = {
@@ -42,7 +38,7 @@ const nextConfig: NextConfig = {
       asyncWebAssembly: true,
       layers: true,
       topLevelAwait: true,
-    };
+    }
 
     // Configure WASM output location
     if (config.output) {
@@ -50,29 +46,29 @@ const nextConfig: NextConfig = {
       if (isNetlify) {
         // For Netlify, use a completely predictable name and location
         config.output.webassemblyModuleFilename = isServer
-          ? '../static/wasm/[modulehash].wasm'  // Server build
-          : 'static/wasm/[modulehash].wasm';    // Client build
+          ? '../static/wasm/[modulehash].wasm' // Server build
+          : 'static/wasm/[modulehash].wasm' // Client build
       } else {
         // For other environments
         config.output.webassemblyModuleFilename = isServer
-          ? '../static/wasm/[modulehash].wasm'  // Server build 
-          : 'static/wasm/[modulehash].wasm';    // Client build
+          ? '../static/wasm/[modulehash].wasm' // Server build
+          : 'static/wasm/[modulehash].wasm' // Client build
       }
     }
 
     // Define environment variable to help with debugging WASM loading
-    config.plugins = config.plugins || [];
+    config.plugins = config.plugins || []
     config.plugins.push(
       new webpack.DefinePlugin({
         'process.env.WASM_DEBUG': JSON.stringify(true),
         'process.env.DEPLOY_ENV': JSON.stringify(
-          isNetlify ? 'netlify' : (isVercel ? 'vercel' : 'standard')
+          isNetlify ? 'netlify' : isVercel ? 'vercel' : 'standard',
         ),
-      })
-    );
+      }),
+    )
 
     // Make sure we don't interfere with the existing loaders
-    return config;
+    return config
   },
   async rewrites() {
     return [
@@ -81,11 +77,11 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: '/api/:path*',
       },
-    ];
+    ]
   },
   outputFileTracingIncludes: {
     '/api/': ['./node_modules/subconverter-wasm/**/*'],
   },
-};
+}
 
-export default withNextIntl(nextConfig);
+export default withNextIntl(nextConfig)
