@@ -5,7 +5,7 @@ set -e
 BUILD_START_TIME=$SECONDS
 
 # Script description
-cat << "EOF"
+cat <<"EOF"
 Subconverter WASM Build & Release Script
 ---------------------------------------
 Usage Options:
@@ -24,21 +24,21 @@ Examples:
 EOF
 
 # Check if wasm-pack is installed
-if ! command -v wasm-pack &> /dev/null; then
-    echo "wasm-pack not found. Installing..."
-    curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+if ! command -v wasm-pack &>/dev/null; then
+  echo "wasm-pack not found. Installing..."
+  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 fi
 
 # Check if jq is installed
-if ! command -v jq &> /dev/null; then
-    echo "jq is required. Please install it using your package manager."
-    exit 1
+if ! command -v jq &>/dev/null; then
+  echo "jq is required. Please install it using your package manager."
+  exit 1
 fi
 
 # Check if pnpm is installed
-if ! command -v pnpm &> /dev/null; then
-    echo "pnpm is required for beta deployments. Please install it (e.g., 'npm install -g pnpm')."
-    exit 1
+if ! command -v pnpm &>/dev/null; then
+  echo "pnpm is required for beta deployments. Please install it (e.g., 'npm install -g pnpm')."
+  exit 1
 fi
 
 # Parse arguments
@@ -50,35 +50,35 @@ BUMP_BETA=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --release)
-      RELEASE_MODE=true
-      shift
-      ;;
-    --prepare-release)
-      PREPARE_RELEASE=true
-      RELEASE_MODE=true
-      shift
-      ;;
-    --bump-patch)
-      BUMP_PATCH=true
-      PREPARE_RELEASE=true
-      RELEASE_MODE=true
-      shift
-      ;;
-    --bump-beta)
-      BUMP_BETA=true
-      RELEASE_MODE=true
-      shift
-      ;;
-    --version)
-      VERSION="$2"
-      shift 2
-      ;;
-    *)
-      echo "Unknown option: $1"
-      echo "Usage: $0 [--release] [--prepare-release] [--bump-patch] [--bump-beta] [--version X.Y.Z]"
-      exit 1
-      ;;
+  --release)
+    RELEASE_MODE=true
+    shift
+    ;;
+  --prepare-release)
+    PREPARE_RELEASE=true
+    RELEASE_MODE=true
+    shift
+    ;;
+  --bump-patch)
+    BUMP_PATCH=true
+    PREPARE_RELEASE=true
+    RELEASE_MODE=true
+    shift
+    ;;
+  --bump-beta)
+    BUMP_BETA=true
+    RELEASE_MODE=true
+    shift
+    ;;
+  --version)
+    VERSION="$2"
+    shift 2
+    ;;
+  *)
+    echo "Unknown option: $1"
+    echo "Usage: $0 [--release] [--prepare-release] [--bump-patch] [--bump-beta] [--version X.Y.Z]"
+    exit 1
+    ;;
   esac
 done
 
@@ -115,7 +115,7 @@ if [ "$BUMP_BETA" = true ]; then
   # Update subconverter-wasm dependency version in www/package.json if it exists
   if [ -f "www/package.json" ]; then
     echo "Updating subconverter-wasm dependency to $VERSION in www/package.json"
-    jq --arg new_version "$VERSION" '(.dependencies? | ."subconverter-wasm") |= $new_version | (.devDependencies? | ."subconverter-wasm") |= $new_version' www/package.json > www/package.json.tmp && mv www/package.json.tmp www/package.json
+    jq --arg new_version "$VERSION" '(.dependencies? | ."subconverter-wasm") |= $new_version | (.devDependencies? | ."subconverter-wasm") |= $new_version' www/package.json >www/package.json.tmp && mv www/package.json.tmp www/package.json
   fi
 
   echo "Running cargo check to update Cargo.lock"
@@ -131,22 +131,22 @@ if [ "$BUMP_BETA" = true ]; then
 
   # Update package.json in pkg
   echo "Updating pkg/package.json..."
-  jq '.files += ["snippets/"]' pkg/package.json | \
-    jq '.dependencies = {"@vercel/kv": "^3.0.0"}' | \
-    jq '.name = "subconverter-wasm"' | \
-    jq '.dependencies["@vercel/kv"] = "^3.0.0"' | \
-    jq '.dependencies["@netlify/blobs"] = "^8.1.2"' | \
-    jq ".version = \"$VERSION\"" > tmp.json && mv tmp.json pkg/package.json
+  jq '.files += ["snippets/"]' pkg/package.json |
+    jq '.dependencies = {"@vercel/kv": "^3.0.0"}' |
+    jq '.name = "subconverter-wasm"' |
+    jq '.dependencies["@vercel/kv"] = "^3.0.0"' |
+    jq '.dependencies["@netlify/blobs"] = "^11.0.3"' |
+    jq ".version = \"$VERSION\"" >tmp.json && mv tmp.json pkg/package.json
 
   # Publish beta version to npm
   echo "Publishing beta version $VERSION to npm..."
   cd pkg
   if pnpm publish --tag beta --no-git-checks; then
-      echo "Successfully published $VERSION to npm."
+    echo "Successfully published $VERSION to npm."
   else
-      echo "Error: Failed to publish $VERSION to npm."
-      cd .. # Ensure we cd back even on failure
-      exit 1
+    echo "Error: Failed to publish $VERSION to npm."
+    cd .. # Ensure we cd back even on failure
+    exit 1
   fi
   cd ..
 
@@ -171,14 +171,14 @@ if [ "$BUMP_BETA" = true ]; then
 
     echo "Running pnpm install in www (will retry up to $MAX_RETRIES times)..."
     until pnpm install; do
-        RETRY_COUNT=$((RETRY_COUNT + 1))
-        if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-            echo "Error: pnpm install failed after $MAX_RETRIES attempts."
-            cd .. # Go back to root before exiting
-            exit 1
-        fi
-        echo "pnpm install failed. Retrying in $RETRY_DELAY seconds (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
-        sleep $RETRY_DELAY
+      RETRY_COUNT=$((RETRY_COUNT + 1))
+      if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+        echo "Error: pnpm install failed after $MAX_RETRIES attempts."
+        cd .. # Go back to root before exiting
+        exit 1
+      fi
+      echo "pnpm install failed. Retrying in $RETRY_DELAY seconds (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
+      sleep $RETRY_DELAY
     done
     echo "pnpm install successful."
 
@@ -210,11 +210,11 @@ if [ "$BUMP_PATCH" = true ]; then
   MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
   MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
   PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3 | cut -d- -f1)
-  
+
   # Bump patch version
   NEW_PATCH=$((PATCH + 1))
   VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
-  
+
   echo "Bumping patch version from $CURRENT_VERSION to $VERSION"
 fi
 
@@ -228,7 +228,7 @@ fi
 if [ "$RELEASE_MODE" = true ] && [ -z "$VERSION" ]; then
   # Extract the base version without any pre-release tags (e.g., 0.1.0 from 0.1.0-pre.xxx)
   BASE_VERSION=$(echo "$CURRENT_VERSION" | sed 's/\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/')
-  
+
   # Generate a pre-release version based on base version + date + short git hash
   GIT_HASH=$(git rev-parse --short HEAD)
   DATE_PART=$(date '+%Y%m%d')
@@ -247,7 +247,7 @@ if [ "$PREPARE_RELEASE" = true ]; then
     echo "Please commit or stash your changes before running version release."
     exit 1
   fi
-  
+
   # Update version in Cargo.toml if needed
   if [ -n "$VERSION" ] && [ "$VERSION" != "$CURRENT_VERSION" ]; then
     echo "Updating version to $VERSION in Cargo.toml"
@@ -256,44 +256,44 @@ if [ "$PREPARE_RELEASE" = true ]; then
     cargo check
     VERSION_UPDATED=true
   fi
-  
+
   # Fetch remote tags to check for previous release attempts
   git fetch --tags
-  
+
   # Count previous release attempts for this version
   BASE_TAG="v${VERSION}"
   ATTEMPT_COUNT=$(git tag -l "${BASE_TAG}-attempt*" | wc -l)
   ATTEMPT_COUNT=$((ATTEMPT_COUNT + 1))
-  
+
   # Create a temporary tag for this release attempt
   TEMP_TAG="${BASE_TAG}-attempt${ATTEMPT_COUNT}"
-  
+
   echo "Creating temporary tag ${TEMP_TAG} for CI workflow..."
   git add Cargo.toml
   git add Cargo.lock
   git commit -m "Prepare release $VERSION (attempt $ATTEMPT_COUNT)"
   git tag -a "${TEMP_TAG}" -m "Preparing release $VERSION (attempt $ATTEMPT_COUNT)"
-  
+
   echo "Pulling latest changes from remote repository..."
   git pull --rebase origin main
-  
+
   echo "Pushing changes and temporary tag to remote repository..."
   git push origin main
   git push origin "${TEMP_TAG}"
-  
+
   echo "Temporary tag created. CI workflow will handle the rest of the release process."
-  
+
   # Output variables for GitHub Actions
   echo "::set-output name=new_version::$VERSION"
   echo "::set-output name=temp_tag::$TEMP_TAG"
-  
+
   exit 0
 fi
 
 # Build the wasm package
 if [ "$RELEASE_MODE" = true ]; then
   echo "Building wasm package in release mode..."
-  
+
   # Update version in Cargo.toml if needed (Ensure this doesn't conflict with beta bump)
   # Use PKG_VERSION which prioritizes explicitly set VERSION over CURRENT_VERSION
   PKG_VERSION=${VERSION:-$CURRENT_VERSION}
@@ -304,17 +304,17 @@ if [ "$RELEASE_MODE" = true ]; then
       echo "Please commit or stash your changes before running version release."
       exit 1
     fi
-    
+
     # Update only if not already updated by BUMP_BETA
     if [ "$BUMP_BETA" = false ]; then
-       echo "Updating version to $PKG_VERSION in Cargo.toml"
-       sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$PKG_VERSION\"/" Cargo.toml
-       echo "Running cargo check to update Cargo.lock"
-       cargo check
-       VERSION_UPDATED=true # Mark version updated
+      echo "Updating version to $PKG_VERSION in Cargo.toml"
+      sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$PKG_VERSION\"/" Cargo.toml
+      echo "Running cargo check to update Cargo.lock"
+      cargo check
+      VERSION_UPDATED=true # Mark version updated
     fi
   fi
-  
+
   wasm-pack build --release --target nodejs
   echo "WASM release build complete! Output is in the 'pkg' directory."
 else
@@ -327,12 +327,12 @@ fi
 echo "Updating package.json..."
 # Use PKG_VERSION calculated earlier
 PKG_VERSION=${VERSION:-$CURRENT_VERSION}
-jq '.files += ["snippets/"]' pkg/package.json | \
-  jq '.dependencies = {"@vercel/kv": "^3.0.0"}' | \
-  jq '.name = "subconverter-wasm"' | \
-  jq '.dependencies["@vercel/kv"] = "^3.0.0"' | \
-  jq '.dependencies["@netlify/blobs"] = "^8.1.2"' | \
-  jq ".version = \"$PKG_VERSION\"" > tmp.json && mv tmp.json pkg/package.json
+jq '.files += ["snippets/"]' pkg/package.json |
+  jq '.dependencies = {"@vercel/kv": "^3.0.0"}' |
+  jq '.name = "subconverter-wasm"' |
+  jq '.dependencies["@vercel/kv"] = "^3.0.0"' |
+  jq '.dependencies["@netlify/blobs"] = "^11.0.3"' |
+  jq ".version = \"$PKG_VERSION\"" >tmp.json && mv tmp.json pkg/package.json
 
 # Install dependencies in pkg
 cd pkg
@@ -342,17 +342,17 @@ cd ..
 # Setup development environment if in dev mode
 if [ "$RELEASE_MODE" = false ]; then
   echo "Setting up development environment..."
-  
+
   # Check if www directory exists and copy files directly
   if [ -d "www" ]; then
     echo "Copying WASM files to www project..."
-    
+
     # Create necessary directories
     mkdir -p www/node_modules/subconverter-wasm
-    
+
     # Copy all files from pkg to www/node_modules/subconverter-wasm
     cp -r pkg/* www/node_modules/subconverter-wasm/
-    
+
     echo "Successfully copied WASM files to www/node_modules/subconverter-wasm"
     echo "Note: You'll need to run this script again after any changes to the WASM code"
   else

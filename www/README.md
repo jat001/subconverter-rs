@@ -29,13 +29,13 @@ cd subconverter-rs
 2. Build the WebAssembly component:
 
 ```bash
-wasm-pack build --release --target nodejs
+scripts/build-wasm.sh
 ```
 
-3. Install dependencies for the Vercel app:
+3. Install dependencies:
 
 ```bash
-cd vercel
+cd www
 pnpm install
 ```
 
@@ -55,7 +55,9 @@ pnpm build
 
 ## Deployment
 
-The app is optimized for deployment on Vercel. Simply connect your GitHub repository to Vercel and deploy.
+```bash
+pnpm deploy:netlify
+```
 
 ## License
 
