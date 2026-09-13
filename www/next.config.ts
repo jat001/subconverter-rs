@@ -71,9 +71,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  outputFileTracingIncludes: {
-    '/api/': ['./node_modules/subconverter-wasm/**/*'],
-  },
 };
 
 export default withNextIntl(nextConfig);
