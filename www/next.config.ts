@@ -54,8 +54,8 @@ const nextConfig: NextConfig = {
     config.plugins = config.plugins || [];
     config.plugins.push(
       new webpack.DefinePlugin({
-        'process.env.WASM_DEBUG': 'true',
-        'process.env.DEPLOY_ENV': deployEnv,
+        'process.env.WASM_DEBUG': JSON.stringify('true'),
+        'process.env.DEPLOY_ENV': JSON.stringify(deployEnv),
       }),
     );
 

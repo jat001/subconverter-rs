@@ -1,4 +1,5 @@
 dangerouslyAllowAllBuilds: true
 minimumReleaseAge: 0
 overrides:
+  subconverter-wasm: file:../pkg
   typescript: npm:typescript-native-bridge@6.0.3-bridge.16.tsgo.7.0.2

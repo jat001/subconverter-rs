@@ -6,6 +6,7 @@ settings:
 
 overrides:
   typescript: npm:typescript-native-bridge@6.0.3-bridge.16.tsgo.7.0.2
+  subconverter-wasm: file:../pkg
 
 importers:
 
@@ -47,6 +48,9 @@ importers:
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
+      subconverter-wasm:
+        specifier: file:../pkg
+        version: file:../pkg(supports-color@8.1.1)
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.7
@@ -2595,6 +2599,9 @@ packages:
         optional: true
       babel-plugin-macros:
         optional: true
+
+  subconverter-wasm@file:../pkg:
+    resolution: {directory: ../pkg, type: directory}
 
   supports-color@8.1.1:
     resolution: {integrity: sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==}
@@ -5410,6 +5417,13 @@ snapshots:
       react: 19.3.0
     optionalDependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
+
+  subconverter-wasm@file:../pkg(supports-color@8.1.1):
+    dependencies:
+      '@netlify/blobs': 11.0.3(supports-color@8.1.1)
+      '@vercel/kv': 3.0.0
+    transitivePeerDependencies:
+      - supports-color
 
   supports-color@8.1.1:
     dependencies:
