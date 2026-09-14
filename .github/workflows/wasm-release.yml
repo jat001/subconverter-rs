@@ -79,7 +79,7 @@ jobs:
           jq '.files += ["snippets/"]' pkg/package.json | \
             jq '.name = "subconverter-wasm"' | \
             jq '.dependencies["@upstash/redis"] = "^1.38.4"' | \
-            jq '.dependencies["@netlify/blobs"] = "^8.1.2"' | \
+            jq '.dependencies["@netlify/blobs"] = "^11.0.3"' | \
             jq '.repository = {"type": "git", "url": "git+https://github.com/lonelam/subconverter-rs.git"}' | \
             jq ".version = \"$VERSION\"" > tmp.json && mv tmp.json pkg/package.json
 

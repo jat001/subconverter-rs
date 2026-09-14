@@ -1,6 +1,0 @@
-{
-  "version": 2,
-  "buildCommand": "pnpm exec next build --webpack",
-  "installCommand": "pnpm install",
-  "framework": "nextjs"
-}
