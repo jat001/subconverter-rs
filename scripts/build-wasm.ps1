@@ -127,8 +127,8 @@ if ($bumpBeta) {
     Write-Host "Updating pkg/package.json..."
     $pkgJsonPath = 'pkg/package.json'
     $json = Get-Content $pkgJsonPath -Raw | jq '.files += ["snippets/"]'
-    $json = $json | jq '.dependencies = {"@vercel/kv": "^3.0.0"}'
     $json = $json | jq '.name = "subconverter-wasm"'
+    $json = $json | jq '.dependencies = {"@upstash/redis": "^1.38.4"}'
     $json = $json | jq '.dependencies["@netlify/blobs"] = "^11.0.3"'
     $json = $json | jq --arg ver "$Version" '.version = $ver'
     $json | Set-Content $pkgJsonPath
@@ -151,11 +151,11 @@ if ($bumpBeta) {
     if (Test-Path 'www') {
         Write-Host "Copying WASM files to www project..."
         $dest = 'www/node_modules/subconverter-wasm'
-        if (-not (Test-Path $dest)) {
-            New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        }
-        Get-ChildItem $dest | Remove-Item -Recurse -Force
-        Copy-Item -Path 'pkg\*' -Destination $dest -Recurse -Force
+        # if (-not (Test-Path $dest)) {
+        #     New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        # }
+        # Get-ChildItem $dest | Remove-Item -Recurse -Force
+        # Copy-Item -Path 'pkg\*' -Destination $dest -Recurse -Force
         Write-Host "Successfully copied WASM files to $dest"
 
         # Deploy www project to Netlify preview
@@ -321,8 +321,8 @@ Write-Host "Updating package.json..."
 $pkgVersion = if ($Version) { $Version } else { $currentVersion }
 $pkgJsonPath = 'pkg/package.json'
 $json = Get-Content $pkgJsonPath -Raw | jq '.files += ["snippets/"]'
-$json = $json | jq '.dependencies = {"@vercel/kv": "^3.0.0"}'
 $json = $json | jq '.name = "subconverter-wasm"'
+$json = $json | jq '.dependencies = {"@upstash/redis": "^1.38.4"}'
 $json = $json | jq '.dependencies["@netlify/blobs"] = "^11.0.3"'
 $json = $json | jq --arg ver "$pkgVersion" '.version = $ver'
 $json | Set-Content $pkgJsonPath
@@ -339,10 +339,10 @@ if (-not $releaseMode) {
     if (Test-Path 'www') {
         Write-Host "Copying WASM files to www project..."
         $dest = 'www/node_modules/subconverter-wasm'
-        if (-not (Test-Path $dest)) {
-            New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        }
-        Copy-Item -Path 'pkg\*' -Destination $dest -Recurse -Force
+        # if (-not (Test-Path $dest)) {
+        #     New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        # }
+        # Copy-Item -Path 'pkg\*' -Destination $dest -Recurse -Force
         Write-Host "Successfully copied WASM files to $dest"
         Write-Host "Note: You'll need to run this script again after any changes to the WASM code"
     }

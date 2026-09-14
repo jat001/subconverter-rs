@@ -11,11 +11,13 @@ This module provides a unified key-value storage interface for the subconverter-
 ### Installation
 
 For Vercel projects:
+
 ```bash
-npm install @vercel/kv
+npm install @upstash/redis
 ```
 
 For Netlify projects:
+
 ```bash
 npm install @netlify/blobs
 ```
@@ -58,4 +60,4 @@ The Rust code for `vercel_kv_vfs.rs` doesn't need any modifications - it will wo
 
 ## Error Handling
 
-All functions include appropriate error handling with fallbacks or friendly errors. 
+All functions include appropriate error handling with fallbacks or friendly errors.

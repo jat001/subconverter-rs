@@ -132,9 +132,8 @@ if [ "$BUMP_BETA" = true ]; then
   # Update package.json in pkg
   echo "Updating pkg/package.json..."
   jq '.files += ["snippets/"]' pkg/package.json |
-    jq '.dependencies = {"@vercel/kv": "^3.0.0"}' |
     jq '.name = "subconverter-wasm"' |
-    jq '.dependencies["@vercel/kv"] = "^3.0.0"' |
+    jq '.dependencies["@upstash/redis"] = "^1.38.4"' |
     jq '.dependencies["@netlify/blobs"] = "^11.0.3"' |
     jq ".version = \"$VERSION\"" >tmp.json && mv tmp.json pkg/package.json
 
@@ -153,11 +152,11 @@ if [ "$BUMP_BETA" = true ]; then
   # Copy WASM package to www project
   if [ -d "www" ]; then
     echo "Copying WASM files to www project..."
-    mkdir -p www/node_modules/subconverter-wasm
+    # mkdir -p www/node_modules/subconverter-wasm
     # Clear existing content first
-    rm -rf www/node_modules/subconverter-wasm/*
+    # rm -rf www/node_modules/subconverter-wasm/*
     # Copy new build
-    cp -r pkg/* www/node_modules/subconverter-wasm/
+    # cp -r pkg/* www/node_modules/subconverter-wasm/
     echo "Successfully copied WASM files to www/node_modules/subconverter-wasm"
 
     # Deploy www project to Netlify preview
@@ -328,9 +327,8 @@ echo "Updating package.json..."
 # Use PKG_VERSION calculated earlier
 PKG_VERSION=${VERSION:-$CURRENT_VERSION}
 jq '.files += ["snippets/"]' pkg/package.json |
-  jq '.dependencies = {"@vercel/kv": "^3.0.0"}' |
   jq '.name = "subconverter-wasm"' |
-  jq '.dependencies["@vercel/kv"] = "^3.0.0"' |
+  jq '.dependencies["@upstash/redis"] = "^1.38.4"' |
   jq '.dependencies["@netlify/blobs"] = "^11.0.3"' |
   jq ".version = \"$PKG_VERSION\"" >tmp.json && mv tmp.json pkg/package.json
 
@@ -348,10 +346,10 @@ if [ "$RELEASE_MODE" = false ]; then
     echo "Copying WASM files to www project..."
 
     # Create necessary directories
-    mkdir -p www/node_modules/subconverter-wasm
+    # mkdir -p www/node_modules/subconverter-wasm
 
     # Copy all files from pkg to www/node_modules/subconverter-wasm
-    cp -r pkg/* www/node_modules/subconverter-wasm/
+    # cp -r pkg/* www/node_modules/subconverter-wasm/
 
     echo "Successfully copied WASM files to www/node_modules/subconverter-wasm"
     echo "Note: You'll need to run this script again after any changes to the WASM code"

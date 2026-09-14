@@ -60,7 +60,7 @@ jobs:
         run: |
           CURRENT_VERSION=$(grep -m 1 "version" Cargo.toml | sed 's/.*"\(.*\)".*/\1/')
           VERSION="${{ steps.set-version.outputs.version }}"
-          
+
           if [ "$CURRENT_VERSION" != "$VERSION" ]; then
             echo "Updating version in Cargo.toml from $CURRENT_VERSION to $VERSION"
             sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$VERSION\"/" Cargo.toml
@@ -77,9 +77,8 @@ jobs:
         run: |
           VERSION="${{ steps.set-version.outputs.version }}"
           jq '.files += ["snippets/"]' pkg/package.json | \
-            jq '.dependencies = {"@vercel/kv": "^3.0.0"}' | \
             jq '.name = "subconverter-wasm"' | \
-            jq '.dependencies["@vercel/kv"] = "^3.0.0"' | \
+            jq '.dependencies["@upstash/redis"] = "^1.38.4"' | \
             jq '.dependencies["@netlify/blobs"] = "^8.1.2"' | \
             jq '.repository = {"type": "git", "url": "git+https://github.com/lonelam/subconverter-rs.git"}' | \
             jq ".version = \"$VERSION\"" > tmp.json && mv tmp.json pkg/package.json
@@ -159,7 +158,7 @@ jobs:
         uses: EndBug/add-and-commit@v9
         with:
           add: 'www/package.json www/pnpm-lock.yaml'
-          message: "Update subconverter-wasm dependency to ${{ steps.set-version.outputs.version }}"
+          message: 'Update subconverter-wasm dependency to ${{ steps.set-version.outputs.version }}'
           default_author: github_actions
           push: true
           new_branch: main

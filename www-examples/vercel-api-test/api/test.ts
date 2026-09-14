@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { kv } from '@upstash/redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // WASM setup for testing
