@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { FileAttributes } from 'subconverter-wasm';
 
 /**
@@ -615,6 +616,16 @@ export function detectUserOS(): string {
     return 'unknown';
 }
 
+// The platform never changes while the page is open, so there is nothing to subscribe to
+const subscribeToUserOS = () => () => {};
+
+/**
+ * Hook returning detectUserOS() on the client, and '' during server rendering and hydration
+ */
+export function useUserOS(): string {
+    return useSyncExternalStore(subscribeToUserOS, detectUserOS, () => '');
+}
+
 /**
  * Settings management interfaces and functions
  */
@@ -773,7 +784,7 @@ export async function readSettingsFile(): Promise<string> {
         try {
             // Attempt to read pref.yml directly first
             return await readFile('pref.yml');
-        } catch (err) {
+        } catch {
             // If pref.yml doesn't exist or can't be read, create it from example
             console.log("pref.yml not found, creating from example...");
             const exampleContent = await readFile('pref.example.yml');

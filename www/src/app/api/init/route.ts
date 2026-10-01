@@ -33,7 +33,7 @@ export async function GET() {
             if (errObj && errObj.message) {
                 details = `[${errObj.type}] ${errObj.message}`;
             }
-        } catch (e) {
+        } catch {
             // Ignore parsing errors, use original message
         }
 

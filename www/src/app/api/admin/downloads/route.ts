@@ -71,7 +71,7 @@ async function writeDownloadsCache(downloads: AppDownload[]): Promise<boolean> {
 }
 
 // GET handler to retrieve the current downloads cache
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
     try {
         const cache = await readDownloadsCache();
 

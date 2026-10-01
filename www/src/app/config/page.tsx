@@ -9,14 +9,6 @@ export default function ConfigEditor() {
     const [activeTab, setActiveTab] = useState("general");
     const [configName, setConfigName] = useState("My Custom Config");
     const [generatedLink, setGeneratedLink] = useState("");
-    const [configContent, setConfigContent] = useState(`# My Subconverter Configuration
-
-[custom]
-enable_rule_generator=true
-overwrite_original_rules=true
-
-# Add your custom configuration here
-`);
 
     const handleSaveConfig = () => {
         // Generate a unique ID for the config
@@ -28,10 +20,6 @@ overwrite_original_rules=true
 
         // In a real implementation, this would save the config to a database
         console.log("Config saved:", configName);
-    };
-
-    const handleConfigChange = (value: string | undefined) => {
-        setConfigContent(value || '');
     };
 
     return (
@@ -213,7 +201,6 @@ overwrite_original_rules=true
                                     <CodeEditor
                                         filePath="config.ini"
                                         language="ini"
-                                        onChange={handleConfigChange}
                                     />
                                 </div>
                             </div>
