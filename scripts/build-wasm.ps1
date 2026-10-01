@@ -127,13 +127,8 @@ function Build-WorkersPkg {
 # --- Check Required Tools ---
 
 if (-not (Test-CommandExists 'wasm-pack')) {
-    Write-Host "wasm-pack not found. Installing..."
-    Invoke-WebRequest -Uri 'https://rustwasm.github.io/wasm-pack/installer/init.sh' -UseBasicParsing | Invoke-Expression
-    # Re-check after install; if still missing, prompt user
-    if (-not (Test-CommandExists 'wasm-pack')) {
-        Write-Error "wasm-pack installation failed. Please install manually."
-        exit 1
-    }
+    Write-Error "wasm-pack is required. Install it with 'cargo install wasm-pack' (see https://github.com/drager/wasm-pack)."
+    exit 1
 }
 
 if (-not (Test-CommandExists 'jq')) {

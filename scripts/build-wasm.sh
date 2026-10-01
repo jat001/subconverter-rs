@@ -25,8 +25,8 @@ EOF
 
 # Check if wasm-pack is installed
 if ! command -v wasm-pack &>/dev/null; then
-  echo "wasm-pack not found. Installing..."
-  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+  echo "wasm-pack is required. Install it with 'cargo install wasm-pack' (see https://github.com/drager/wasm-pack)."
+  exit 1
 fi
 
 # Check if jq is installed
