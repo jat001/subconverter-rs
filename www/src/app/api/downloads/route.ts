@@ -111,13 +111,13 @@ async function updateDownloadsCache() {
     }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
     try {
         const downloads = await loadDownloadsCacheFromVFS();
 
         // Transform the downloads data into a client-friendly format
         const clientDownloads = downloads.flatMap((app: AppDownload) => {
-            return Object.entries(app.platforms).map(([platform, config]) => {
+            return Object.keys(app.platforms).map((platform) => {
                 return {
                     name: app.name,
                     version: 'latest', // Could be improved by fetching actual latest version
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
     try {
         // This endpoint is for admin use only to force update the downloads cache
         // In a production app, you would add authentication here

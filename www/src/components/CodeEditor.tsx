@@ -17,6 +17,40 @@ interface CodeEditorProps {
     onSave?: (filePath: string, content: string) => void;
 }
 
+// Detect the editor language from a file extension
+function detectLanguage(filePath: string): string {
+    const extension = filePath.split('.').pop()?.toLowerCase();
+
+    switch (extension) {
+        case 'js':
+        case 'jsx':
+            return 'javascript';
+        case 'ts':
+        case 'tsx':
+            return 'typescript';
+        case 'json':
+            return 'json';
+        case 'yml':
+        case 'yaml':
+            return 'yaml';
+        case 'rs':
+            return 'rust';
+        case 'md':
+            return 'markdown';
+        case 'html':
+            return 'html';
+        case 'css':
+            return 'css';
+        case 'ini':
+            return 'ini';
+        case 'sh':
+        case 'bash':
+            return 'shell';
+        default:
+            return 'plaintext';
+    }
+}
+
 export default function CodeEditor({
     filePath,
     language,
@@ -27,83 +61,39 @@ export default function CodeEditor({
     onChange,
     onSave
 }: CodeEditorProps) {
+    const isControlled = value !== undefined;
+
     const [internalContent, setInternalContent] = useState<string>('');
-    const [editorLanguage, setEditorLanguage] = useState<string>(language || 'plaintext');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(!isControlled && !!filePath);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [fileAttributes, setFileAttributes] = useState<FileAttributes | null>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
-    const isControlled = value !== undefined;
     const displayContent = isControlled ? value : internalContent;
 
-    // Detect language from file extension if filePath is provided and language isn't
-    useEffect(() => {
-        if (!filePath || language) {
-            setEditorLanguage(language || 'plaintext');
-            return;
+    // Use the language prop, else detect it from the file extension
+    const editorLanguage = language || (filePath ? detectLanguage(filePath) : 'plaintext');
+
+    // Reset per-file state while rendering when the content source changes, so stale
+    // attributes or errors never render for the new source
+    // (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+    const [prevSource, setPrevSource] = useState({ filePath, isControlled });
+    if (filePath !== prevSource.filePath || isControlled !== prevSource.isControlled) {
+        setPrevSource({ filePath, isControlled });
+        setFileAttributes(null);
+        setError(null);
+        if (!isControlled) {
+            if (filePath) setLoading(true); // The effect below loads the new file
+            else setInternalContent(''); // Clear internal if no path
         }
-
-        const extension = filePath.split('.').pop()?.toLowerCase();
-        let detectedLanguage = 'plaintext';
-
-        switch (extension) {
-            case 'js':
-            case 'jsx':
-                detectedLanguage = 'javascript';
-                break;
-            case 'ts':
-            case 'tsx':
-                detectedLanguage = 'typescript';
-                break;
-            case 'json':
-                detectedLanguage = 'json';
-                break;
-            case 'yml':
-            case 'yaml':
-                detectedLanguage = 'yaml';
-                break;
-            case 'rs':
-                detectedLanguage = 'rust';
-                break;
-            case 'md':
-                detectedLanguage = 'markdown';
-                break;
-            case 'html':
-                detectedLanguage = 'html';
-                break;
-            case 'css':
-                detectedLanguage = 'css';
-                break;
-            case 'ini':
-                detectedLanguage = 'ini';
-                break;
-            case 'sh':
-            case 'bash':
-                detectedLanguage = 'shell';
-                break;
-            default:
-                detectedLanguage = 'plaintext';
-        }
-
-        setEditorLanguage(detectedLanguage);
-    }, [filePath, language]);
+    }
 
     // Load file content only if not controlled and filePath changes
     useEffect(() => {
-        if (isControlled || !filePath) {
-            // If controlled or no path, clear attributes and don't load
-            setFileAttributes(null);
-            if (!isControlled) setInternalContent(''); // Clear internal if no path
-            setError(null);
-            return;
-        }
+        if (isControlled || !filePath) return;
 
         const loadFile = async () => {
-            setLoading(true);
-            setError(null);
-            setFileAttributes(null);
             try {
                 // Get file content
                 const fileContent = await apiClient.readFile(filePath);

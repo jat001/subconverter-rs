@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 // Path for the startup page
@@ -8,15 +8,20 @@ const STARTUP_PATH = '/startup';
 // Key for localStorage flag
 const INIT_FLAG_KEY = 'webappInitialized';
 
+const readInitFlag = () => localStorage.getItem(INIT_FLAG_KEY) === 'true';
+// The startup page sets the flag and then navigates, which re-renders this component and
+// re-reads it, so there is nothing to subscribe to
+const subscribe = () => () => {};
+
 export default function AppInitializer({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const [isInitialized, setIsInitialized] = useState<boolean | null>(null); // null initially, true/false after check
+    // null on the server and during hydration, true/false once read on the client
+    const isInitialized = useSyncExternalStore<boolean | null>(subscribe, readInitFlag, () => null);
 
     useEffect(() => {
         // Check localStorage only on the client side
-        const initialized = localStorage.getItem(INIT_FLAG_KEY) === 'true';
-        setIsInitialized(initialized);
+        const initialized = readInitFlag();
 
         console.log(`AppInitializer: Initialized flag = ${initialized}`);
 
@@ -41,4 +46,4 @@ export default function AppInitializer({ children }: { children: React.ReactNode
 
     // Render children only if initialized and not on the startup page
     return <>{children}</>;
-} 
+}

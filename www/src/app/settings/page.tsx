@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { readSettingsFile, writeSettingsFile } from '@/lib/api-client';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -115,54 +115,43 @@ export default function SettingsPage() {
     const commonT = useTranslations('Common');
 
     const [settings, setSettings] = useState<SubconverterSettings>({});
-    const [originalYaml, setOriginalYaml] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [activeTab, setActiveTab] = useState('common');
-    const [yamlPreviewContent, setYamlPreviewContent] = useState('');
-
-    // Add state to track unsaved changes in CodeEditors
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     useEffect(() => {
-        loadSettings();
-    }, []);
-
-    useEffect(() => {
-        if (!isLoading) {
+        const loadSettings = async () => {
             try {
-                const currentYaml = yaml.dump(settings, {
-                    indent: 2,
-                    lineWidth: -1,
-                    noRefs: true,
-                    sortKeys: false
-                });
-                setYamlPreviewContent(currentYaml);
+                const yamlContent = await readSettingsFile();
+
+                const parsedSettings = yaml.load(yamlContent) as SubconverterSettings;
+                setSettings(parsedSettings || {});
             } catch (err) {
-                console.error("Error generating YAML preview:", err);
-                setYamlPreviewContent("# Error generating YAML preview");
+                setError(t('loadError', { message: err instanceof Error ? err.message : String(err) }));
+                console.error("Error loading settings:", err);
+            } finally {
+                setIsLoading(false);
             }
-        }
-    }, [settings, isLoading]);
+        };
 
-    const loadSettings = async () => {
-        setIsLoading(true);
-        setError(null);
+        loadSettings();
+    }, [t]);
+
+    const yamlPreviewContent = useMemo(() => {
         try {
-            const yamlContent = await readSettingsFile();
-            setOriginalYaml(yamlContent);
-
-            const parsedSettings = yaml.load(yamlContent) as SubconverterSettings;
-            setSettings(parsedSettings || {});
+            return yaml.dump(settings, {
+                indent: 2,
+                lineWidth: -1,
+                noRefs: true,
+                sortKeys: false
+            });
         } catch (err) {
-            setError(t('loadError', { message: err instanceof Error ? err.message : String(err) }));
-            console.error("Error loading settings:", err);
-        } finally {
-            setIsLoading(false);
+            console.error("Error generating YAML preview:", err);
+            return "# Error generating YAML preview";
         }
-    };
+    }, [settings]);
 
     const saveSettings = async () => {
         setIsSaving(true);
@@ -178,7 +167,6 @@ export default function SettingsPage() {
             });
 
             await writeSettingsFile(yamlContent);
-            setOriginalYaml(yamlContent);
             setSaveSuccess(true);
 
             // Hide success message after 3 seconds
@@ -211,17 +199,6 @@ export default function SettingsPage() {
                 [key]: arrayValue
             }
         }));
-    };
-
-    // Callback for CodeEditor save
-    const handleCodeEditorSave = () => {
-        setHasUnsavedChanges(false); // Reset unsaved changes flag on successful save
-        // Optionally: show a success message specific to the editor
-    };
-
-    // Callback for CodeEditor change
-    const handleCodeEditorChange = () => {
-        setHasUnsavedChanges(true); // Set unsaved changes flag
     };
 
     const renderCommonSection = () => {
@@ -732,8 +709,6 @@ export default function SettingsPage() {
                         <CodeEditor
                             filePath="snippets/emoji.txt"
                             language="plaintext"
-                            onSave={handleCodeEditorSave}
-                            onChange={handleCodeEditorChange}
                         />
                     </div>
                 </div>
@@ -744,8 +719,6 @@ export default function SettingsPage() {
                         <CodeEditor
                             filePath="gistconf.ini"
                             language="ini"
-                            onSave={handleCodeEditorSave}
-                            onChange={handleCodeEditorChange}
                         />
                     </div>
                 </div>

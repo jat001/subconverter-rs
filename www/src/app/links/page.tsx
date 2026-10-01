@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShortUrlData, listShortUrls, deleteShortUrl, createShortUrl, updateShortUrl, moveShortUrl } from "@/lib/api-client";
-import { useRouter } from "next/navigation";
 import { copyToClipboard } from "@/lib/clipboard";
 
 export default function SavedLinks() {
@@ -14,26 +13,24 @@ export default function SavedLinks() {
     const [newLink, setNewLink] = useState({ target_url: "", custom_id: "", description: "" });
     const [editingLink, setEditingLink] = useState<ShortUrlData | null>(null);
     const [editCustomId, setEditCustomId] = useState<string>('');
-    const router = useRouter();
 
     // Load links on component mount
     useEffect(() => {
+        const loadLinks = async () => {
+            try {
+                const data = await listShortUrls();
+                setLinks(data);
+                setError(null);
+            } catch (err: any) {
+                setError(err.error || "Failed to load links");
+                console.error("Error loading links:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         loadLinks();
     }, []);
-
-    const loadLinks = async () => {
-        try {
-            setLoading(true);
-            const data = await listShortUrls();
-            setLinks(data);
-            setError(null);
-        } catch (err: any) {
-            setError(err.error || "Failed to load links");
-            console.error("Error loading links:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this short URL?")) {

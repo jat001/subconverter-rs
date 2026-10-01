@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { DirectoryEntry, FileAttributes } from 'subconverter-wasm';
+import { DirectoryEntry } from 'subconverter-wasm';
 import * as apiClient from '@/lib/api-client';
 
 interface ArboristFileExplorerProps {
@@ -59,7 +59,7 @@ const FileButton: React.FC<FileButtonProps> = ({ file, onDirClick, onFileClick }
 export default function ArboristFileExplorer({ onFileSelect }: ArboristFileExplorerProps) {
     const [currentPath, setCurrentPath] = useState('');
     const [files, setFiles] = useState<DirectoryEntry[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true); // The initial load starts on mount
     const [error, setError] = useState<string | null>(null);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [newItemName, setNewItemName] = useState('');
@@ -74,24 +74,8 @@ export default function ArboristFileExplorer({ onFileSelect }: ArboristFileExplo
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     };
 
-    // Helper function to get source type color
-    const getSourceTypeColor = (sourceType: string): string => {
-        switch (sourceType) {
-            case 'user':
-                return 'bg-green-800 text-green-200';
-            case 'cloud':
-                return 'bg-blue-800 text-blue-200';
-            case 'placeholder':
-                return 'bg-gray-700 text-gray-300';
-            default:
-                return 'bg-gray-700 text-gray-300';
-        }
-    };
-
-    // Load directory contents
-    const loadDirectory = useCallback(async (path: string = '') => {
-        setLoading(true);
-        setError(null);
+    // Fetch directory contents; state is only updated once the request settles
+    const fetchDirectory = useCallback(async (path: string) => {
         try {
             const data = await apiClient.listDirectory(path);
             setFiles(data.entries || []);
@@ -104,10 +88,18 @@ export default function ArboristFileExplorer({ onFileSelect }: ArboristFileExplo
         }
     }, []);
 
+    // Load directory contents
+    const loadDirectory = useCallback((path: string = '') => {
+        setLoading(true);
+        setError(null);
+        return fetchDirectory(path);
+    }, [fetchDirectory]);
+
     // Initial load
     useEffect(() => {
-        loadDirectory();
-    }, [loadDirectory]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchDirectory only sets state after its request settles
+        fetchDirectory('');
+    }, [fetchDirectory]);
 
     // Handle directory click
     const handleDirClick = (dirPath: string) => {
@@ -153,7 +145,7 @@ export default function ArboristFileExplorer({ onFileSelect }: ArboristFileExplo
     };
 
     // Handle delete item
-    const handleDeleteItem = async (path: string, isDirectory: boolean) => {
+    const handleDeleteItem = async (path: string) => {
         if (!confirm(`Are you sure you want to delete ${path}?`)) {
             return;
         }
@@ -283,7 +275,7 @@ export default function ArboristFileExplorer({ onFileSelect }: ArboristFileExplo
                                     className="text-red-500 hover:text-red-700 p-1"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleDeleteItem(file.path, file.is_directory);
+                                        handleDeleteItem(file.path);
                                     }}
                                 >
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

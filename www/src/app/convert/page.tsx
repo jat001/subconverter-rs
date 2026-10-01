@@ -119,7 +119,7 @@ export default function ConvertPage() {
         });
     }, []);
 
-    const handleSubmit = useCallback(async (e: FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setResult(null);
@@ -145,7 +145,7 @@ export default function ConvertPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [formData, saveApiUrl]);
+    };
 
     const handleDownload = useCallback(() => {
         if (!result || !result.content) return;
@@ -164,7 +164,6 @@ export default function ConvertPage() {
     const isSubmitDisabled = !formData.target || !formData.url || isLoading;
 
     // Basic styling using Tailwind (assuming setup)
-    const inputClass = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm";
     const checkboxClass = "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500";
     const labelClass = "block text-sm font-medium text-gray-700";
     const fieldsetLegendClass = "text-lg font-semibold text-gray-900 mb-2";

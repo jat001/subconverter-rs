@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         const prefPath = requestData.pref_path || '';
 
         // Call the WASM function to initialize settings
-        const result = await wasmModule.init_settings_wasm(prefPath);
+        await wasmModule.init_settings_wasm(prefPath);
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error: any) {

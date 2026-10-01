@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { getAvailableDownloads, detectUserOS, AppDownloadInfo } from '@/lib/api-client';
+import { getAvailableDownloads, useUserOS, AppDownloadInfo } from '@/lib/api-client';
 
 export default function DownloadsPage() {
     const t = useTranslations('DownloadsPage');
     const [downloads, setDownloads] = useState<AppDownloadInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [userOS, setUserOS] = useState('');
+    const userOS = useUserOS();
 
     useEffect(() => {
         async function loadDownloads() {
@@ -25,9 +25,6 @@ export default function DownloadsPage() {
                 setIsLoading(false);
             }
         }
-
-        // Detect user OS
-        setUserOS(detectUserOS());
 
         loadDownloads();
     }, [t]);

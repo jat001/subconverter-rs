@@ -19,7 +19,6 @@ const deployEnv = process.env.DEPLOY_ENV || 'unknown';
 type SubconverterWasm = typeof subconverterWasm;
 
 // WASM module singleton to avoid re-initialization
-let wasmModule: SubconverterWasm | null = null;
 let initPromise: Promise<SubconverterWasm> | null = null;
 
 /**
@@ -120,7 +119,6 @@ export async function loadWasmSingleton(context: string = 'API'): Promise<Subcon
         console.log(`[${context}] Initializing WASM module singleton...`);
         initPromise = initWasm()
             .then((module) => {
-                wasmModule = module;
                 console.log(`[${context}] WASM singleton initialized successfully`);
                 return module;
             })

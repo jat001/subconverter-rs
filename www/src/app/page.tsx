@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, FormEvent, useCallback, useEffect } from "react";
 import { useTranslations } from 'next-intl';
-import { convertSubscription, SubResponseData, ErrorData, createShortUrl, ShortUrlData, getAvailableDownloads, detectUserOS, AppDownloadInfo } from '@/lib/api-client';
+import { convertSubscription, SubResponseData, ErrorData, createShortUrl, ShortUrlData, getAvailableDownloads, useUserOS, AppDownloadInfo } from '@/lib/api-client';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { copyToClipboard } from '@/lib/clipboard';
 
@@ -50,14 +50,9 @@ export default function Home() {
   const [shortUrlCreating, setShortUrlCreating] = useState(false);
   const [shortUrlCreated, setShortUrlCreated] = useState(false);
   const [shortUrlData, setShortUrlData] = useState<ShortUrlData | null>(null);
-  const [userOs, setUserOs] = useState<string>("");
+  const userOs = useUserOS();
   const [downloads, setDownloads] = useState<AppDownloadInfo[]>([]);
   const [downloadLoading, setDownloadLoading] = useState(false);
-
-  // Detect user OS
-  useEffect(() => {
-    setUserOs(detectUserOS());
-  }, []);
 
   // Fetch available downloads
   useEffect(() => {
@@ -77,9 +72,21 @@ export default function Home() {
   }, []);
 
   // Reset shortUrlCreated when form inputs change
-  useEffect(() => {
+  const handleSubscriptionUrlChange = (url: string) => {
+    setSubscriptionUrl(url);
     setShortUrlCreated(false);
-  }, [subscriptionUrl, targetFormat, configUrl]);
+  };
+
+  const handleTargetFormatChange = (format: string) => {
+    setTargetFormat(format);
+    setShortUrlCreated(false);
+  };
+
+  const handleConfigUrlChange = (url: string) => {
+    if (url === configUrl) return; // Re-selecting the active preset is not a change
+    setConfigUrl(url);
+    setShortUrlCreated(false);
+  };
 
   // Generate the API URL based on form inputs
   const generateApiUrl = useCallback(() => {
@@ -224,7 +231,7 @@ export default function Home() {
                 placeholder="https://example.com/subscription"
                 className="w-full p-2 border border-gray-300 rounded bg-white/10"
                 value={subscriptionUrl}
-                onChange={(e) => setSubscriptionUrl(e.target.value)}
+                onChange={(e) => handleSubscriptionUrlChange(e.target.value)}
                 required
               />
             </div>
@@ -237,7 +244,7 @@ export default function Home() {
                 id="targetFormat"
                 className="w-full p-2 border border-gray-300 rounded bg-white/10"
                 value={targetFormat}
-                onChange={(e) => setTargetFormat(e.target.value)}
+                onChange={(e) => handleTargetFormatChange(e.target.value)}
               >
                 {SUPPORTED_TARGETS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -252,7 +259,7 @@ export default function Home() {
                   <button
                     key={preset.name}
                     type="button"
-                    onClick={() => setConfigUrl(preset.url)}
+                    onClick={() => handleConfigUrlChange(preset.url)}
                     className={`px-3 py-1.5 text-xs rounded border transition-colors ${configUrl === preset.url
                       ? 'bg-blue-500 text-white border-blue-600'
                       : 'bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-800'
@@ -269,7 +276,7 @@ export default function Home() {
                 placeholder="External configuration URL or path"
                 className="w-full p-2 border border-gray-300 rounded bg-white/10"
                 value={configUrl}
-                onChange={(e) => setConfigUrl(e.target.value)}
+                onChange={(e) => handleConfigUrlChange(e.target.value)}
               />
               <p className="mt-1 text-xs text-gray-400">
                 {t('optionalConfigInfo')}

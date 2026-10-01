@@ -1,33 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { startTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { locales } from '@/i18n/request';
 
 export default function LanguageSwitcher() {
     const router = useRouter();
-    const [currentLocale, setCurrentLocale] = useState<string>('en');
-
-    // Get current locale from cookie on component mount
-    useEffect(() => {
-        const storedLocale = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('NEXT_LOCALE='))
-            ?.split('=')[1] || 'en';
-
-        setCurrentLocale(storedLocale);
-    }, []);
+    // The locale the server rendered with (NEXT_LOCALE cookie, else the default locale);
+    // switches optimistically on click until the refresh applies the new locale
+    const [currentLocale, setCurrentLocale] = useOptimistic(useLocale());
 
     const handleLanguageChange = (newLocale: string) => {
         // Set a cookie with the new locale
+        // eslint-disable-next-line react-hooks/immutability -- writing document.cookie in an event handler is the intended side effect
         document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
 
-        // Update state
-        setCurrentLocale(newLocale);
+        startTransition(() => {
+            // Update state
+            setCurrentLocale(newLocale);
 
-        // Reload the page to apply the new language
-        router.refresh();
+            // Reload the page to apply the new language
+            router.refresh();
+        });
     };
 
     // Language names in their native language - keep these hardcoded
