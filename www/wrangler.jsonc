@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
 
-  "name": "site",
+  "name": "subconverter-rs",
   "compatibility_date": "2026-10-01",
 
   "cache": {
