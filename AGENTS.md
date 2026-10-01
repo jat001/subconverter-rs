@@ -39,7 +39,7 @@ pnpm lint
 
 Optional cargo feature `js-runtime` (rquickjs, non-wasm only) enables JS scripting support; CI release builds use `--features=web-api,js-runtime`.
 
-CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo test`, `cargo check --lib --target wasm32-unknown-unknown`, and the wasm-host typecheck/tests, and fails if the committed `wasm-host/dist/` is stale.
+CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo fmt --check`, `cargo test`, `cargo check` for wasm32 and for the `js-runtime` feature (all with `RUSTFLAGS=-D warnings`), the wasm-host typecheck/tests (failing if the committed `wasm-host/dist/` is stale), and for `www/` a dev WASM build followed by `pnpm lint`, typecheck and `pnpm build`.
 
 ## Release flow
 

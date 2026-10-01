@@ -53,6 +53,56 @@ jobs:
       - name: Check WASM target
         run: cargo check --lib --target wasm32-unknown-unknown
 
+  www:
+    name: www lint, typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@12
+
+      # www resolves subconverter-wasm to ../pkg (see www/pnpm-workspace.yaml), so build it first
+      - name: Build WASM package (dev)
+        run: ./scripts/build-wasm.sh
+
+      - name: Install dependencies
+        working-directory: www
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: www
+        run: pnpm lint
+
+      - name: Typecheck
+        working-directory: www
+        run: |
+          pnpm exec next typegen
+          pnpm exec tsc --noEmit
+
+      - name: Build
+        working-directory: www
+        run: pnpm build
+
   wasm-host:
     name: wasm-host tests
     runs-on: ubuntu-latest
