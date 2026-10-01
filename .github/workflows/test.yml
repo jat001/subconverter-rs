@@ -37,6 +37,10 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      # Code behind the js-runtime feature is otherwise only compiled by the release builds
+      - name: Check js-runtime feature
+        run: cargo check --all-targets --features web-api,js-runtime
+
       # Shared code (parser, generator, settings, utils) must keep compiling for the WASM build
       - name: Check WASM target
         run: cargo check --lib --target wasm32-unknown-unknown
