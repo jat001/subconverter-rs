@@ -1,13 +1,11 @@
+.DS_Store
+
 base/pref.toml
 bin/
 target/
 pkg/
-node_modules/
-.netlify/
-.vercel/
 
-.cursorignore
-.cursorrules
+.claude/
 .vscode/
 !.vscode/extensions.json
 !.vscode/settings.json
