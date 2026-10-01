@@ -78,7 +78,14 @@ fn generate_all() -> Vec<(&'static str, String)> {
         let mut ext = ext_nodelist();
         outputs.push((
             "clash_nodelist",
-            proxy_to_clash(&mut nodes, "", &mut Vec::new(), &Vec::new(), false, &mut ext),
+            proxy_to_clash(
+                &mut nodes,
+                "",
+                &mut Vec::new(),
+                &Vec::new(),
+                false,
+                &mut ext,
+            ),
         ));
     }
     {

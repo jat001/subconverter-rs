@@ -11,9 +11,17 @@ use serde::{Deserialize, Serialize};
 pub struct ClashWireGuard {
     #[serde(flatten)]
     pub common: ClashCommon,
-    #[serde(default, alias = "privateKey", skip_serializing_if = "is_empty_option_string")]
+    #[serde(
+        default,
+        alias = "privateKey",
+        skip_serializing_if = "is_empty_option_string"
+    )]
     pub private_key: Option<String>,
-    #[serde(default, alias = "publicKey", skip_serializing_if = "is_empty_option_string")]
+    #[serde(
+        default,
+        alias = "publicKey",
+        skip_serializing_if = "is_empty_option_string"
+    )]
     pub public_key: Option<String>,
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub ip: Option<String>,

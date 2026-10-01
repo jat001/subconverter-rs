@@ -74,11 +74,7 @@ pub struct ClashVmess {
     pub cipher: Option<String>,
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub network: Option<String>,
-    #[serde(
-        default,
-        alias = "sni",
-        skip_serializing_if = "is_empty_option_string"
-    )]
+    #[serde(default, alias = "sni", skip_serializing_if = "is_empty_option_string")]
     pub servername: Option<String>,
     #[serde(
         default,

@@ -312,21 +312,12 @@ mod tests {
         assert_eq!(nodes[0].proxy_type, ProxyType::ShadowsocksR);
         assert_eq!(nodes[0].hostname, "example1.com");
         assert_eq!(nodes[0].port, 8388);
-        assert_eq!(
-            nodes[0].protocol().unwrap_or(""),
-            "auth_aes128_md5"
-        );
-        assert_eq!(
-            nodes[0].encrypt_method().unwrap_or(""),
-            "aes-256-cfb"
-        );
+        assert_eq!(nodes[0].protocol().unwrap_or(""), "auth_aes128_md5");
+        assert_eq!(nodes[0].encrypt_method().unwrap_or(""), "aes-256-cfb");
         assert_eq!(nodes[0].obfs().unwrap_or(""), "tls1.2_ticket_auth");
         assert_eq!(nodes[0].password().unwrap_or(""), "password1");
         assert_eq!(nodes[0].obfs_param().unwrap_or(""), "obfs.param1");
-        assert_eq!(
-            nodes[0].protocol_param().unwrap_or(""),
-            "proto.param1"
-        );
+        assert_eq!(nodes[0].protocol_param().unwrap_or(""), "proto.param1");
         assert_eq!(nodes[0].remark, "Server 1");
         assert_eq!(nodes[0].group, "Group 1");
 
@@ -339,10 +330,7 @@ mod tests {
         assert_eq!(nodes[1].obfs().unwrap_or(""), "http_simple");
         assert_eq!(nodes[1].password().unwrap_or(""), "password2");
         assert_eq!(nodes[1].obfs_param().unwrap_or(""), "obfs.param2");
-        assert_eq!(
-            nodes[1].protocol_param().unwrap_or(""),
-            "proto.param2"
-        );
+        assert_eq!(nodes[1].protocol_param().unwrap_or(""), "proto.param2");
         assert_eq!(nodes[1].remark, "Server 2");
         assert_eq!(nodes[1].group, "Group 2");
     }

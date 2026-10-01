@@ -163,8 +163,9 @@ mod tests {
 
     #[test]
     fn test_vmess_missing_cipher_defaults_to_auto() {
-        let proxy =
-            parse_one(r#"{"name":"n","type":"vmess","server":"s.example.com","port":443,"uuid":"u"}"#);
+        let proxy = parse_one(
+            r#"{"name":"n","type":"vmess","server":"s.example.com","port":443,"uuid":"u"}"#,
+        );
         assert_eq!(proxy.encrypt_method(), Some("auto"));
     }
 

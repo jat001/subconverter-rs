@@ -1,6 +1,5 @@
 //! URL encoding/decoding utilities
 
-
 /// Encodes a string using URL encoding
 ///
 /// # Arguments

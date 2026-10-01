@@ -201,7 +201,11 @@ pub async fn proxy_to_surge(
                     port,
                     id,
                     if tls_secure { "true" } else { "false" },
-                    if node.alter_id() == 0 { "true" } else { "false" }
+                    if node.alter_id() == 0 {
+                        "true"
+                    } else {
+                        "false"
+                    }
                 );
 
                 if tls_secure && !tls13.is_undef() {

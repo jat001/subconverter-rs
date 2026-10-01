@@ -22,10 +22,7 @@ fn short_id_lenient<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    Ok(
-        crate::utils::deserialize::deserialize_string_or_number(deserializer)?
-            .unwrap_or_default(),
-    )
+    Ok(crate::utils::deserialize::deserialize_string_or_number(deserializer)?.unwrap_or_default())
 }
 
 /// HTTP options (`http-opts`)
@@ -139,11 +136,7 @@ pub struct ClashVless {
     pub ws_path: Option<String>,
     #[serde(default, skip_serializing, alias = "ws-headers")]
     pub ws_headers: Option<HashMap<String, String>>,
-    #[serde(
-        default,
-        alias = "sni",
-        skip_serializing_if = "is_empty_option_string"
-    )]
+    #[serde(default, alias = "sni", skip_serializing_if = "is_empty_option_string")]
     pub servername: Option<String>,
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub fingerprint: Option<String>,

@@ -11,8 +11,8 @@ use std::sync::RwLock;
 
 use log::debug;
 use log::info;
-use yaml_serde;
 use toml;
+use yaml_serde;
 
 use crate::models::cron::CronTaskConfigs;
 use crate::models::proxy_group_config::ProxyGroupConfig;

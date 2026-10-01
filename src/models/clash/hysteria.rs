@@ -43,7 +43,11 @@ pub struct ClashHysteria {
     pub down_speed: Option<u32>,
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub auth: Option<String>,
-    #[serde(default, alias = "auth_str", skip_serializing_if = "is_empty_option_string")]
+    #[serde(
+        default,
+        alias = "auth_str",
+        skip_serializing_if = "is_empty_option_string"
+    )]
     pub auth_str: Option<String>,
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub obfs: Option<String>,
@@ -57,7 +61,11 @@ pub struct ClashHysteria {
     pub alpn: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub ca: Option<String>,
-    #[serde(rename = "ca-str", default, skip_serializing_if = "is_empty_option_string")]
+    #[serde(
+        rename = "ca-str",
+        default,
+        skip_serializing_if = "is_empty_option_string"
+    )]
     pub ca_str: Option<String>,
     #[serde(
         rename = "recv-window-conn",
@@ -65,7 +73,11 @@ pub struct ClashHysteria {
         skip_serializing_if = "Option::is_none"
     )]
     pub recv_window_conn: Option<u32>,
-    #[serde(rename = "recv-window", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "recv-window",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub recv_window: Option<u32>,
     #[serde(
         rename = "disable-mtu-discovery",
@@ -74,11 +86,7 @@ pub struct ClashHysteria {
         skip_serializing_if = "Option::is_none"
     )]
     pub disable_mtu_discovery: Option<bool>,
-    #[serde(
-        rename = "fast-open",
-        default,
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "fast-open", default, skip_serializing_if = "Option::is_none")]
     pub fast_open: Option<bool>,
     #[serde(
         rename = "hop-interval",

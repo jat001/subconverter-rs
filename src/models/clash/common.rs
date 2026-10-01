@@ -22,7 +22,11 @@ pub struct ClashCommon {
     pub fingerprint: Option<String>,
     #[serde(default, skip_serializing_if = "is_empty_option_string")]
     pub client_fingerprint: Option<String>,
-    #[serde(default, alias = "servername", skip_serializing_if = "is_empty_option_string")]
+    #[serde(
+        default,
+        alias = "servername",
+        skip_serializing_if = "is_empty_option_string"
+    )]
     pub sni: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mptcp: Option<bool>,

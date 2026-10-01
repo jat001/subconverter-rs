@@ -132,9 +132,8 @@ pub fn parse_peers(data: &str, node: &mut Proxy) -> bool {
 
     // Ensure the node carries WireGuard options before applying peer fields
     if node.as_wireguard().is_none() {
-        node.combined_proxy = Some(
-            crate::models::proxy_node::combined::CombinedProxy::WireGuard(Default::default()),
-        );
+        node.combined_proxy =
+            Some(crate::models::proxy_node::combined::CombinedProxy::WireGuard(Default::default()));
     }
 
     // Process key-value pairs

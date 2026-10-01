@@ -1,4 +1,3 @@
-
 /// Match a range against a target integer value
 ///
 /// This function checks if a target value is within a specified range.

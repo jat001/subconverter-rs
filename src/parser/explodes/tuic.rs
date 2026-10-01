@@ -127,7 +127,10 @@ mod tests {
     #[test]
     fn test_explode_tuic_minimal() {
         let mut node = Proxy::default();
-        assert!(explode_tuic("tuic://uuid-value:pw@1.2.3.4:443#n", &mut node));
+        assert!(explode_tuic(
+            "tuic://uuid-value:pw@1.2.3.4:443#n",
+            &mut node
+        ));
         assert_eq!(node.port, 443);
         assert_eq!(node.as_tuic().unwrap().password, "pw");
     }

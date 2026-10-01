@@ -169,7 +169,12 @@ macro_rules! typed_accessors {
 }
 
 impl Proxy {
-    typed_accessors!(as_shadowsocks, as_shadowsocks_mut, Shadowsocks, ShadowsocksProxy);
+    typed_accessors!(
+        as_shadowsocks,
+        as_shadowsocks_mut,
+        Shadowsocks,
+        ShadowsocksProxy
+    );
     typed_accessors!(
         as_shadowsocksr,
         as_shadowsocksr_mut,

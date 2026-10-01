@@ -1,6 +1,4 @@
-use crate::models::{
-    Proxy, SOCKS_DEFAULT_GROUP, SSR_DEFAULT_GROUP, SS_CIPHERS, SS_DEFAULT_GROUP,
-};
+use crate::models::{Proxy, SOCKS_DEFAULT_GROUP, SSR_DEFAULT_GROUP, SS_CIPHERS, SS_DEFAULT_GROUP};
 use serde_json::{from_str, Value};
 
 /// Parse a SSTap JSON configuration into a vector of Proxy objects

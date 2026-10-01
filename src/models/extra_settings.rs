@@ -1,4 +1,3 @@
-
 use crate::Settings;
 
 use super::{Proxy, RegexMatchConfigs};

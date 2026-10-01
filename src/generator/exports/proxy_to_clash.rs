@@ -5,8 +5,8 @@ use crate::generator::yaml::clash::clash_output::ClashProxyOutput;
 use crate::generator::yaml::proxy_group_output::convert_proxy_groups;
 use crate::models::{ExtraSettings, Proxy, ProxyGroupConfigs, ProxyType, RulesetContent};
 use log::error;
-use yaml_serde::{self, Mapping, Sequence, Value as YamlValue};
 use std::collections::{HashMap, HashSet};
+use yaml_serde::{self, Mapping, Sequence, Value as YamlValue};
 
 // Lists of supported protocols and encryption methods for filtering in ClashR
 lazy_static::lazy_static! {
@@ -442,7 +442,14 @@ proxies:
         ext.nodelist = true;
         ext.enable_rule_generator = false;
         ext.clash_flavor = flavor;
-        proxy_to_clash(&mut nodes, "", &mut Vec::new(), &Vec::new(), false, &mut ext)
+        proxy_to_clash(
+            &mut nodes,
+            "",
+            &mut Vec::new(),
+            &Vec::new(),
+            false,
+            &mut ext,
+        )
     }
 
     /// mihomo (default) keeps everything, including REALITY and uTLS.

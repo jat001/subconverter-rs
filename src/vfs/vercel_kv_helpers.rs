@@ -125,7 +125,6 @@ pub fn get_key_with_suffix(path: &str, suffix: &str) -> String {
 /// # Returns
 /// A content key string for KV storage
 pub fn get_content_key(path: &str) -> String {
-    
     get_key_with_suffix(path, FILE_CONTENT_SUFFIX)
 }
 

@@ -93,7 +93,10 @@ fn build_singbox_transport(proxy: &Proxy) -> JsonValue {
 
             if let Some(path) = proxy.path() {
                 if !path.is_empty() {
-                    transport.insert("service_name".to_string(), JsonValue::String(path.to_string()));
+                    transport.insert(
+                        "service_name".to_string(),
+                        JsonValue::String(path.to_string()),
+                    );
                 }
             }
         }
@@ -243,7 +246,10 @@ pub fn proxy_to_singbox(
                 }
 
                 if let Some(password) = node.password() {
-                    obj.insert("password".to_string(), JsonValue::String(password.to_string()));
+                    obj.insert(
+                        "password".to_string(),
+                        JsonValue::String(password.to_string()),
+                    );
                 }
 
                 // Handle plugin if present
@@ -278,11 +284,17 @@ pub fn proxy_to_singbox(
                 }
 
                 if let Some(password) = node.password() {
-                    obj.insert("password".to_string(), JsonValue::String(password.to_string()));
+                    obj.insert(
+                        "password".to_string(),
+                        JsonValue::String(password.to_string()),
+                    );
                 }
 
                 if let Some(protocol) = node.protocol() {
-                    obj.insert("protocol".to_string(), JsonValue::String(protocol.to_string()));
+                    obj.insert(
+                        "protocol".to_string(),
+                        JsonValue::String(protocol.to_string()),
+                    );
                 }
 
                 if let Some(protocol_param) = node.protocol_param() {
@@ -320,7 +332,10 @@ pub fn proxy_to_singbox(
                 );
 
                 if let Some(method) = node.encrypt_method() {
-                    obj.insert("security".to_string(), JsonValue::String(method.to_string()));
+                    obj.insert(
+                        "security".to_string(),
+                        JsonValue::String(method.to_string()),
+                    );
                 }
 
                 // Add transport settings if any
@@ -337,7 +352,10 @@ pub fn proxy_to_singbox(
 
                 // Add Trojan specific fields
                 if let Some(password) = node.password() {
-                    obj.insert("password".to_string(), JsonValue::String(password.to_string()));
+                    obj.insert(
+                        "password".to_string(),
+                        JsonValue::String(password.to_string()),
+                    );
                 }
 
                 // Add transport settings if any
@@ -458,7 +476,10 @@ pub fn proxy_to_singbox(
 
                 if let Some(auth_str) = node.auth_str() {
                     if !auth_str.is_empty() {
-                        obj.insert("auth_str".to_string(), JsonValue::String(auth_str.to_string()));
+                        obj.insert(
+                            "auth_str".to_string(),
+                            JsonValue::String(auth_str.to_string()),
+                        );
 
                         // Create a temporary String
                         let auth_str_value = auth_str;
@@ -511,7 +532,10 @@ pub fn proxy_to_singbox(
 
                 if let Some(ca_str) = &hy.ca_str {
                     if !ca_str.is_empty() {
-                        tls.insert("certificate".to_string(), JsonValue::String(ca_str.to_string()));
+                        tls.insert(
+                            "certificate".to_string(),
+                            JsonValue::String(ca_str.to_string()),
+                        );
                     }
                 }
 
@@ -559,7 +583,10 @@ pub fn proxy_to_singbox(
 
                 if let Some(password) = node.password() {
                     if !password.is_empty() {
-                        obj.insert("password".to_string(), JsonValue::String(password.to_string()));
+                        obj.insert(
+                            "password".to_string(),
+                            JsonValue::String(password.to_string()),
+                        );
                     }
                 }
 
@@ -584,7 +611,10 @@ pub fn proxy_to_singbox(
 
                 if let Some(ca_str) = &hy2.ca_str {
                     if !ca_str.is_empty() {
-                        tls.insert("certificate".to_string(), JsonValue::String(ca_str.to_string()));
+                        tls.insert(
+                            "certificate".to_string(),
+                            JsonValue::String(ca_str.to_string()),
+                        );
                     }
                 }
 
@@ -597,11 +627,17 @@ pub fn proxy_to_singbox(
 
                 // Add HTTP/HTTPS specific fields
                 if let Some(username) = node.username() {
-                    obj.insert("username".to_string(), JsonValue::String(username.to_string()));
+                    obj.insert(
+                        "username".to_string(),
+                        JsonValue::String(username.to_string()),
+                    );
                 }
 
                 if let Some(password) = node.password() {
-                    obj.insert("password".to_string(), JsonValue::String(password.to_string()));
+                    obj.insert(
+                        "password".to_string(),
+                        JsonValue::String(password.to_string()),
+                    );
                 }
 
                 obj
@@ -614,11 +650,17 @@ pub fn proxy_to_singbox(
                 obj.insert("version".to_string(), JsonValue::String("5".to_string()));
 
                 if let Some(username) = node.username() {
-                    obj.insert("username".to_string(), JsonValue::String(username.to_string()));
+                    obj.insert(
+                        "username".to_string(),
+                        JsonValue::String(username.to_string()),
+                    );
                 }
 
                 if let Some(password) = node.password() {
-                    obj.insert("password".to_string(), JsonValue::String(password.to_string()));
+                    obj.insert(
+                        "password".to_string(),
+                        JsonValue::String(password.to_string()),
+                    );
                 }
 
                 obj
@@ -650,8 +692,7 @@ pub fn proxy_to_singbox(
                 let mut transport = Map::new();
                 match vless.network.as_deref() {
                     Some("ws") => {
-                        transport
-                            .insert("type".to_string(), JsonValue::String("ws".to_string()));
+                        transport.insert("type".to_string(), JsonValue::String("ws".to_string()));
                         if let Some(path) = vless.ws_path.clone().filter(|p| !p.is_empty()) {
                             transport.insert("path".to_string(), JsonValue::String(path));
                         }
@@ -661,21 +702,16 @@ pub fn proxy_to_singbox(
                                 let mut ordered: Vec<_> = headers.iter().collect();
                                 ordered.sort();
                                 for (key, value) in ordered {
-                                    header_map.insert(
-                                        key.clone(),
-                                        JsonValue::String(value.clone()),
-                                    );
+                                    header_map
+                                        .insert(key.clone(), JsonValue::String(value.clone()));
                                 }
-                                transport.insert(
-                                    "headers".to_string(),
-                                    JsonValue::Object(header_map),
-                                );
+                                transport
+                                    .insert("headers".to_string(), JsonValue::Object(header_map));
                             }
                         }
                     }
                     Some("grpc") => {
-                        transport
-                            .insert("type".to_string(), JsonValue::String("grpc".to_string()));
+                        transport.insert("type".to_string(), JsonValue::String("grpc".to_string()));
                         if let Some(service_name) =
                             vless.grpc_service_name.clone().filter(|s| !s.is_empty())
                         {
@@ -686,8 +722,7 @@ pub fn proxy_to_singbox(
                         }
                     }
                     Some("http") | Some("h2") => {
-                        transport
-                            .insert("type".to_string(), JsonValue::String("http".to_string()));
+                        transport.insert("type".to_string(), JsonValue::String("http".to_string()));
                         if let Some(path) = vless
                             .http_path
                             .clone()
@@ -719,10 +754,8 @@ pub fn proxy_to_singbox(
                     );
                 }
 
-                if let Some(congestion) = tuic
-                    .congestion_controller
-                    .clone()
-                    .filter(|c| !c.is_empty())
+                if let Some(congestion) =
+                    tuic.congestion_controller.clone().filter(|c| !c.is_empty())
                 {
                     obj.insert(
                         "congestion_control".to_string(),
@@ -800,7 +833,10 @@ pub fn proxy_to_singbox(
                 }
             } else if let Some(host) = node.host() {
                 if !host.is_empty() {
-                    tls.insert("server_name".to_string(), JsonValue::String(host.to_string()));
+                    tls.insert(
+                        "server_name".to_string(),
+                        JsonValue::String(host.to_string()),
+                    );
                 }
             }
 

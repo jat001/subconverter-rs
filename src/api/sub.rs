@@ -77,9 +77,10 @@ mod number_deserializer {
                 if s.is_empty() {
                     Ok(None)
                 } else {
-                    s.trim().parse::<u32>().map(Some).map_err(|_| {
-                        serde::de::Error::custom(format!("invalid number: {}", s))
-                    })
+                    s.trim()
+                        .parse::<u32>()
+                        .map(Some)
+                        .map_err(|_| serde::de::Error::custom(format!("invalid number: {}", s)))
                 }
             }
             None => Ok(None),

@@ -1,4 +1,3 @@
-
 pub fn is_empty_option_string(s: &Option<String>) -> bool {
     s.is_none() || s.as_ref().unwrap().is_empty()
 }

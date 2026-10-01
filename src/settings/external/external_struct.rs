@@ -1,6 +1,6 @@
-use yaml_serde;
 use std::collections::HashMap;
 use toml;
+use yaml_serde;
 
 use crate::models::{ProxyGroupConfig, RegexMatchConfig, RulesetConfig};
 use crate::settings::Settings;
