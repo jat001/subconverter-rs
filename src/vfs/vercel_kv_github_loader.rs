@@ -334,8 +334,6 @@ impl VercelKvVfs {
                     parent_dir_clone
                 );
 
-                let mut current_batch_success = true; // Track success for this specific directory
-
                 // Perform read-modify-write synchronously for this directory
                 match vfs
                     .store
@@ -375,7 +373,6 @@ impl VercelKvVfs {
                                 parent_dir_clone,
                                 e
                             );
-                            current_batch_success = false;
                             failures += files_in_batch; // Mark all files in this batch as failed
                         } else {
                             successes += files_in_batch; // Mark all files as successful for this batch
@@ -383,7 +380,6 @@ impl VercelKvVfs {
                     }
                     Err(e) => {
                         log::error!("Failed to read initial metadata for dir '{}': {:?}. Skipping update for {} files.", parent_dir_clone, e, files.len());
-                        current_batch_success = false;
                         failures += files.len(); // Count files as failures if initial read failed
                                                  // Add placeholders to results anyway, even if metadata write fails?
                                                  // Let's add them, as they exist conceptually.

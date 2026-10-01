@@ -719,7 +719,6 @@ pub fn sub_process_wasm(query_json: &str) -> Promise {
         }
     };
 
-    let query_json_string = Some(query_json.to_string());
     // Create a future for the async sub_process
     let future = async move {
         match sub_process(None, query).await {

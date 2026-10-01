@@ -488,7 +488,7 @@ pub async fn web_post_async(
     _proxy_config: &ProxyConfig,
     headers: Option<&HashMap<CaseInsensitiveString, String>>,
 ) -> Result<HttpResponse, HttpError> {
-    let mut opts = RequestInit::new();
+    let opts = RequestInit::new();
     opts.set_method("POST");
     opts.set_mode(RequestMode::Cors);
     opts.set_body(&JsValue::from_str(&data));
@@ -695,7 +695,7 @@ pub async fn web_patch_async(
     _proxy_config: &ProxyConfig,
     headers: Option<&HashMap<CaseInsensitiveString, String>>,
 ) -> Result<HttpResponse, HttpError> {
-    let mut opts = RequestInit::new();
+    let opts = RequestInit::new();
     opts.set_method("PATCH");
     opts.set_mode(RequestMode::Cors);
     opts.set_body(&JsValue::from_str(&data));

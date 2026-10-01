@@ -216,7 +216,7 @@ impl VercelKvVfs {
             let cached_metadata_exists = self.store.exists_in_metadata_cache("").await; // Check cache for root
             let mut skip_github_due_to_cache = false;
             if cached_metadata_exists {
-                if let Some(cached_attrs) = self.store.read_from_metadata_cache("").await {
+                if self.store.read_from_metadata_cache("").await.is_some() {
                     // If it's cached, assume it's accurate for now, skip GitHub load.
                     // This check might need refinement depending on cache invalidation strategy.
                     log::debug!(

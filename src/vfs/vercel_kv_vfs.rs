@@ -3,9 +3,7 @@ use crate::vfs::vercel_kv_github::GitHubConfig;
 use crate::vfs::vercel_kv_store::VercelKvStore;
 use crate::vfs::vercel_kv_types::*;
 use crate::vfs::VfsError;
-use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct VercelKvVfs {
@@ -37,16 +35,6 @@ impl VercelKvVfs {
             store: Arc::new(VercelKvStore::new()),
             github_config,
         })
-    }
-
-    // Internal helper to get memory cache from store
-    pub(crate) fn memory_cache(&self) -> Arc<RwLock<HashMap<String, Vec<u8>>>> {
-        self.store.get_memory_cache()
-    }
-
-    // Internal helper to get metadata cache from store
-    pub(crate) fn metadata_cache(&self) -> Arc<RwLock<HashMap<String, FileAttributes>>> {
-        self.store.get_metadata_cache()
     }
 
     /// Internal implementation for initializing GitHub load.

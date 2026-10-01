@@ -257,42 +257,4 @@ impl VercelKvVfs {
 
         Ok(())
     }
-
-    /// Delete directory (recursive)
-    pub(crate) async fn delete_directory_impl(&self, path: &str) -> Result<(), VfsError> {
-        let normalized_path = normalize_path(path);
-        log::debug!("Deleting directory recursively: {}", normalized_path);
-
-        // List directory contents (without GitHub supplement for deletion)
-        let entries = self.list_directory_impl(&normalized_path, true).await?;
-
-        // Recursively delete children
-        for entry in entries {
-            if entry.is_directory {
-                // Box the recursive future
-                Box::pin(self.delete_directory_impl(&entry.path)).await?;
-            } else {
-                self.delete_file_impl(&entry.path).await?;
-            }
-        }
-
-        // Delete the directory marker itself
-        self.store
-            .delete_directory_marker_from_kv(&normalized_path)
-            .await?;
-
-        // Remove directory from metadata cache
-        self.store
-            .remove_from_metadata_cache(&normalized_path)
-            .await;
-
-        // Optional: Clean up directory entry from parent's metadata?
-        // let parent = get_parent_directory(&normalized_path);
-        // if !parent.is_empty() {
-        //     // This would involve reading parent, removing entry, writing parent back
-        //     // Might be complex/racy, consider if necessary.
-        // }
-
-        Ok(())
-    }
 }

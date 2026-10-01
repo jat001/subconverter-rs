@@ -46,14 +46,14 @@ impl<T> MockRwLock<T> {
         }
     }
 
-    pub fn read(&self) -> Result<MockReadGuard<T>, ()> {
+    pub fn read(&self) -> Result<MockReadGuard<'_, T>, ()> {
         // In Wasm, we're single-threaded, so this is safe
         Ok(MockReadGuard {
             data: unsafe { &*self.inner.get() },
         })
     }
 
-    pub fn write(&self) -> Result<MockWriteGuard<T>, ()> {
+    pub fn write(&self) -> Result<MockWriteGuard<'_, T>, ()> {
         // In Wasm, we're single-threaded, so this is safe
         Ok(MockWriteGuard {
             data: unsafe { &mut *self.inner.get() },

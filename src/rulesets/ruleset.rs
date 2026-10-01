@@ -299,7 +299,8 @@ pub async fn refresh_rulesets(
     }
 }
 
-/// Helper struct to store fetch results and metadata
+/// Helper struct to store fetch results and metadata (used by refresh_rulesets)
+#[cfg(not(target_arch = "wasm32"))]
 struct FetchResult {
     url: String,
     group: String,
