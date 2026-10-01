@@ -7,16 +7,48 @@ use serde_json;
 use serde_wasm_bindgen;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::UNIX_EPOCH;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use wasm_bindgen_futures;
+
+/// How long entries stay in the in-memory caches. Each isolate / function instance keeps its own
+/// caches and nothing invalidates them across instances, so this bounds how long an instance can keep
+/// serving a file after another instance rewrote or deleted it in the KV store.
+const MEMORY_CACHE_TTL: Duration = Duration::from_secs(10);
+
+struct CacheEntry<T> {
+    value: T,
+    expires_at: SystemTime,
+}
+
+type TtlCache<T> = Arc<RwLock<HashMap<String, CacheEntry<T>>>>;
+
+fn cache_entry<'a, T>(cache: &'a HashMap<String, CacheEntry<T>>, path: &str) -> Option<&'a T> {
+    cache
+        .get(path)
+        .filter(|entry| entry.expires_at > safe_system_time())
+        .map(|entry| &entry.value)
+}
+
+fn cache_insert<T>(cache: &mut HashMap<String, CacheEntry<T>>, path: &str, value: T) {
+    let now = safe_system_time();
+    // Drop expired entries so the cache does not keep every file ever read
+    cache.retain(|_, entry| entry.expires_at > now);
+    cache.insert(
+        path.to_string(),
+        CacheEntry {
+            value,
+            expires_at: now + MEMORY_CACHE_TTL,
+        },
+    );
+}
 
 /// Represents the storage layer for Vercel KV VFS
 /// Handles all interactions with KV store and memory caches
 #[derive(Clone)]
 pub struct VercelKvStore {
-    memory_cache: Arc<RwLock<HashMap<String, Vec<u8>>>>,
-    metadata_cache: Arc<RwLock<HashMap<String, FileAttributes>>>,
+    memory_cache: TtlCache<Vec<u8>>,
+    metadata_cache: TtlCache<FileAttributes>,
 }
 
 impl VercelKvStore {
@@ -28,36 +60,23 @@ impl VercelKvStore {
         }
     }
 
-    /// Get memory cache reference
-    pub fn get_memory_cache(&self) -> Arc<RwLock<HashMap<String, Vec<u8>>>> {
-        self.memory_cache.clone()
-    }
-
-    /// Get metadata cache reference
-    pub fn get_metadata_cache(&self) -> Arc<RwLock<HashMap<String, FileAttributes>>> {
-        self.metadata_cache.clone()
-    }
-
     //------------------------------------------------------------------------------
     // Memory Cache Operations
     //------------------------------------------------------------------------------
 
     /// Read file content from memory cache
     pub async fn read_from_memory_cache(&self, path: &str) -> Option<Vec<u8>> {
-        self.memory_cache.read().await.get(path).cloned()
+        cache_entry(&*self.memory_cache.read().await, path).cloned()
     }
 
     /// Write file content to memory cache
     pub async fn write_to_memory_cache(&self, path: &str, content: Vec<u8>) {
-        self.memory_cache
-            .write()
-            .await
-            .insert(path.to_string(), content);
+        cache_insert(&mut *self.memory_cache.write().await, path, content);
     }
 
     /// Check if file exists in memory cache
     pub async fn exists_in_memory_cache(&self, path: &str) -> bool {
-        self.memory_cache.read().await.contains_key(path)
+        cache_entry(&*self.memory_cache.read().await, path).is_some()
     }
 
     /// Remove file from memory cache
@@ -71,20 +90,17 @@ impl VercelKvStore {
 
     /// Read file attributes from metadata cache
     pub async fn read_from_metadata_cache(&self, path: &str) -> Option<FileAttributes> {
-        self.metadata_cache.read().await.get(path).cloned()
+        cache_entry(&*self.metadata_cache.read().await, path).cloned()
     }
 
     /// Write file attributes to metadata cache
     pub async fn write_to_metadata_cache(&self, path: &str, attributes: FileAttributes) {
-        self.metadata_cache
-            .write()
-            .await
-            .insert(path.to_string(), attributes);
+        cache_insert(&mut *self.metadata_cache.write().await, path, attributes);
     }
 
     /// Check if metadata exists in cache
     pub async fn exists_in_metadata_cache(&self, path: &str) -> bool {
-        self.metadata_cache.read().await.contains_key(path)
+        cache_entry(&*self.metadata_cache.read().await, path).is_some()
     }
 
     /// Remove metadata from cache

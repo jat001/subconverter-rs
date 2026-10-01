@@ -1,6 +1,7 @@
 use crate::utils::http_wasm::{web_get_async, ProxyConfig};
 use crate::vfs::vercel_kv_helpers::*;
 use crate::vfs::vercel_kv_store::create_file_attributes;
+use crate::vfs::vercel_kv_types::{DIRECTORY_MARKER_SUFFIX, FILE_CONTENT_SUFFIX};
 use crate::vfs::vercel_kv_vfs::VercelKvVfs;
 use case_insensitive_string::CaseInsensitiveString;
 use std::collections::HashMap;
@@ -231,10 +232,35 @@ impl VercelKvVfs {
         Ok(false)
     }
 
-    /// Delete a file from the VFS
+    /// Delete a file, or a directory together with everything under it, from the VFS
     pub(crate) async fn delete_file_impl(&self, path: &str) -> Result<(), VfsError> {
-        let normalized_path = normalize_path(path);
+        let normalized_path = normalize_path(path).trim_end_matches('/').to_string();
         log::debug!("Deleting file: {}", normalized_path);
+
+        if normalized_path.is_empty() {
+            return Err(VfsError::InvalidPath(
+                "Refusing to delete the root directory".to_string(),
+            ));
+        }
+
+        // A directory owns its own marker and every key below it; dropping only its entry from the
+        // parent listing would leave them all behind as unreachable keys
+        if self.store.directory_exists_in_kv(&normalized_path).await? {
+            let prefix = format!("{}/", normalized_path);
+            for key in self.store.list_keys_with_prefix(&prefix).await? {
+                if let Some(file) = key.strip_suffix(FILE_CONTENT_SUFFIX) {
+                    self.store.delete_from_kv(file).await?;
+                    self.store.remove_from_memory_cache(file).await;
+                    self.store.remove_from_metadata_cache(file).await;
+                } else if let Some(dir) = key.strip_suffix(DIRECTORY_MARKER_SUFFIX) {
+                    self.store.delete_directory_marker_from_kv(dir).await?;
+                    self.store.remove_from_metadata_cache(dir).await;
+                    self.store
+                        .remove_from_metadata_cache(&format!("{}/", dir))
+                        .await;
+                }
+            }
+        }
 
         // Delete content from KV
         let content_delete_result = self.store.delete_from_kv(&normalized_path).await;
