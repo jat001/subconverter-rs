@@ -1,4 +1,0 @@
-# Disable the web-api feature for wasm builds
-[target.'cfg(target_arch = "wasm32")'.features]
-default = []
-web-api = false

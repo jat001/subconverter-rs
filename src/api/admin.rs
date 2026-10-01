@@ -121,12 +121,6 @@ pub async fn admin_load_github_directory_flat(
 }
 
 #[wasm_bindgen]
-pub fn admin_debug_test_panic() -> Result<(), JsValue> {
-    log::warn!("admin_debug_test_panic called - triggering intentional panic");
-    panic!("Intentional test panic from admin_debug_test_panic()");
-}
-
-#[wasm_bindgen]
 pub fn admin_init_kv_bindings_js() -> Result<JsValue, JsValue> {
     // Assuming dummy() initializes or returns something needed for JS bindings
     dummy().map_err(|_| JsValue::from_str("Failed to initialize KV bindings"))

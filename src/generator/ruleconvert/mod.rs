@@ -7,7 +7,6 @@ pub mod common;
 pub mod convert_ruleset;
 // Keep the ruleset module for now but don't use its RulesetType
 mod ruleset;
-// mod ruleset_to_clash; // @deprecated
 pub mod ruleset_to_clash_str;
 pub mod ruleset_to_sing_box;
 pub mod ruleset_to_surge;
