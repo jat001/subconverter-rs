@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
   // This ensures proper WASM loading in server environments like Netlify
   serverExternalPackages: ['subconverter-wasm'],
 
-  async rewrites() {
+  rewrites() {
     return [
       // Rewrite all API calls to the pages/api directory
       {

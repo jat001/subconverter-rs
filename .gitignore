@@ -1,16 +1,13 @@
-/target
-/.vscode/launch.json
-/base/pref.toml
-/pkg
-# WASM test project
-wasm-test/node_modules
-wasm-test/dist
-wasm-test/.rspack-cache
-# Local Netlify folder
-.netlify
-/.vscode/settings.json
-/.cursorignore
-/.cursorrules
-node_modules
-/bin
-.vercel
+base/pref.toml
+bin/
+target/
+pkg/
+node_modules/
+.netlify/
+.vercel/
+
+.cursorignore
+.cursorrules
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
