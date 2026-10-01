@@ -1,10 +1,10 @@
 [package]
-name = "subconverter"
+name = "subconverter-rs"
 version = "0.2.36"
 edition = "2021"
 description = "A more powerful utility to convert between proxy subscription format"
 license = "GPL-3.0+"
-repository = "https://github.com/lonelam/subconverter-rs"
+repository = "https://github.com/jat001/subconverter-rs"
 
 [lib]
 name = "libsubconverter"
@@ -17,6 +17,7 @@ js-runtime = ["rquickjs"]
 
 [[bin]]
 name = "subconverter"
+path = "src/main.rs"
 required-features = ["web-api"]
 
 [dependencies]

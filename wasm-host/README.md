@@ -6,8 +6,8 @@ Host-side code for the subconverter-rs WebAssembly package: what runs in JavaScr
 | --- | --- |
 | `src/kv_bindings.ts` | Bindings imported by the Rust code (`src/vfs/`, `src/utils/http_wasm.rs`): KV storage for the virtual file system, environment variable access, fetch helpers |
 | `dist/kv_bindings.js` | Compiled output of the above. Committed, because wasm-bindgen reads it when the crate is compiled for `wasm32` (also from crates.io). Do not edit by hand |
-| `workers/` | Cloudflare Workers entry, copied next to the `--target web` build in `pkg/workers/` and published as `subconverter-wasm/workers` |
-| `package.json` | Runtime dependencies of the bindings; the build scripts merge them into the published `subconverter-wasm` package |
+| `workers/` | Cloudflare Workers entry, copied next to the `--target web` build in `pkg/workers/` and published as `@jat/subconverter-wasm/workers` |
+| `package.json` | Runtime dependencies of the bindings; the build scripts merge them into the published `@jat/subconverter-wasm` package |
 
 ## Development
 
@@ -59,10 +59,10 @@ The binding is read from `import { env } from 'cloudflare:workers'`, so no glue 
 
 ## Cloudflare Workers
 
-The default `subconverter-wasm` entry is built with `wasm-pack --target nodejs`, which compiles the `.wasm` from bytes read with `fs` at load time. Workers do not allow that, so the package also ships a Workers build under `subconverter-wasm/workers` (`--target web`, entry in `workers/`). It imports the `.wasm` as a precompiled `WebAssembly.Module` through wrangler's default `*.wasm` rule and instantiates it on import, so no init call is needed:
+The default `@jat/subconverter-wasm` entry is built with `wasm-pack --target nodejs`, which compiles the `.wasm` from bytes read with `fs` at load time. Workers do not allow that, so the package also ships a Workers build under `@jat/subconverter-wasm/workers` (`--target web`, entry in `workers/`). It imports the `.wasm` as a precompiled `WebAssembly.Module` through wrangler's default `*.wasm` rule and instantiates it on import, so no init call is needed:
 
 ```js
-import { sub_process_wasm } from 'subconverter-wasm/workers'
+import { sub_process_wasm } from '@jat/subconverter-wasm/workers'
 
 export default {
   async fetch(request) {

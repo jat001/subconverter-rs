@@ -9,8 +9,8 @@ subconverter-rs 是 C++ 版 [subconverter](https://github.com/tindy2013/subconve
 | **在线服务** | 直接用，无需部署 | <https://subconverter-rs.netlify.app> |
 | **HTTP API 服务器** | 自托管，供订阅客户端定期拉取 | 二进制 / Docker，默认端口 `25500` |
 | **命令行一次性转换** | 脚本化、离线生成配置文件 | `subconverter --url "/sub?..." -o out.yaml` |
-| **Rust 库** | 在自己的 Rust 项目里做格式转换 | crates.io 上的 [`subconverter`](https://crates.io/crates/subconverter) crate |
-| **WASM / npm 包** | 在 Node.js / Serverless（Netlify、Vercel）里跑转换 | npm 上的 [`subconverter-wasm`](https://www.npmjs.com/package/subconverter-wasm) |
+| **Rust 库** | 在自己的 Rust 项目里做格式转换 | crates.io 上的 [`subconverter-rs`](https://crates.io/crates/subconverter-rs) crate |
+| **WASM / npm 包** | 在 Node.js / Serverless（Netlify、Vercel）里跑转换 | npm 上的 [`@jat/subconverter-wasm`](https://www.npmjs.com/package/@jat/subconverter-wasm) |
 
 ## 文档目录
 

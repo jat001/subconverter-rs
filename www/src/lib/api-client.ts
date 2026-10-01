@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { FileAttributes } from 'subconverter-wasm';
+import { FileAttributes } from '@jat/subconverter-wasm';
 
 /**
  * Response data from the subscription converter API

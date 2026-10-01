@@ -163,13 +163,16 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  subconverter-wasm: file:../pkg
+  '@jat/subconverter-wasm': file:../pkg
   typescript: npm:typescript-native-bridge@6.0.3-bridge.18.tsgo.7.0.2
 
 importers:
 
   .:
     dependencies:
+      '@jat/subconverter-wasm':
+        specifier: file:../pkg
+        version: file:../pkg
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.57.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -200,9 +203,6 @@ importers:
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
-      subconverter-wasm:
-        specifier: file:../pkg
-        version: file:../pkg
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.3.3
@@ -574,6 +574,9 @@ packages:
     engines: {node: '>=20.9.0'}
     cpu: [x64]
     os: [win32]
+
+  '@jat/subconverter-wasm@file:../pkg':
+    resolution: {directory: ../pkg, type: directory}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2527,9 +2530,6 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  subconverter-wasm@file:../pkg:
-    resolution: {directory: ../pkg, type: directory}
-
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
@@ -3009,6 +3009,13 @@ snapshots:
 
   '@img/sharp-win32-x64@0.35.5':
     optional: true
+
+  '@jat/subconverter-wasm@file:../pkg':
+    dependencies:
+      '@netlify/blobs': 11.1.3
+      '@upstash/redis': 1.39.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -5096,13 +5103,6 @@ snapshots:
       react: 19.3.0
     optionalDependencies:
       '@babel/core': 7.29.7
-
-  subconverter-wasm@file:../pkg:
-    dependencies:
-      '@netlify/blobs': 11.1.3
-      '@upstash/redis': 1.39.0
-    transitivePeerDependencies:
-      - supports-color
 
   supports-preserve-symlinks-flag@1.0.0: {}
 

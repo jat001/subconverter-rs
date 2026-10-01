@@ -1,8 +1,8 @@
 // This file provides TypeScript interfaces for the subconverter WASM module
 
 // Import the WASM module and its types directly
-import * as subconverterWasm from 'subconverter-wasm';
-import type { DirectoryEntry, FileAttributes } from 'subconverter-wasm';
+import * as subconverterWasm from '@jat/subconverter-wasm';
+import type { DirectoryEntry, FileAttributes } from '@jat/subconverter-wasm';
 
 // Export the types for use elsewhere
 export type { DirectoryEntry, FileAttributes };
@@ -134,12 +134,12 @@ export async function loadWasmSingleton(context: string = 'API'): Promise<Subcon
 // Initialize the module
 if (typeof subconverterWasm.init_panic_hook === 'function') {
     subconverterWasm.init_panic_hook();
-    console.log('Initialized subconverter-wasm panic hook');
+    console.log('Initialized @jat/subconverter-wasm panic hook');
 }
 
 if (typeof subconverterWasm.admin_init_kv_bindings_js === 'function') {
     subconverterWasm.admin_init_kv_bindings_js();
-    console.log('Initialized subconverter-wasm kv bindings');
+    console.log('Initialized @jat/subconverter-wasm kv bindings');
 }
 
 // Log environment information
@@ -149,7 +149,7 @@ console.log(`Is Next.js server: ${isNextJsServer()}`);
 console.log(`Is Netlify: ${isNetlifyEnvironment()}`);
 
 // Export all functions from the module
-export * from 'subconverter-wasm';
+export * from '@jat/subconverter-wasm';
 
 // Call a dummy function to test the module is loaded
 console.log('Testing WASM module loaded successfully');

@@ -70,7 +70,7 @@ function Test-JsonEqual {
 $PkgJsonBackup = 'target/pkg-package.json.bak'
 # Runtime dependencies of the wasm-host bindings (shipped in pkg/snippets/) are declared in wasm-host/package.json
 $HostPkgJson = 'wasm-host/package.json'
-$PkgJsonFilter = '.name = "subconverter-wasm" | .version = $ver | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f)) | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))'
+$PkgJsonFilter = '.name = "@jat/subconverter-wasm" | .publishConfig = {"access": "public"} | .version = $ver | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f)) | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))'
 
 # Compile the TypeScript bindings (wasm-host/src -> wasm-host/dist) that wasm-bindgen embeds
 function Build-WasmHost {
@@ -110,7 +110,7 @@ function Update-PkgJson {
     }
 }
 
-# Cloudflare Workers build, published as `subconverter-wasm/workers`: the same crate through
+# Cloudflare Workers build, published as `@jat/subconverter-wasm/workers`: the same crate through
 # `--target web`, plus the entry in wasm-host/workers/ that instantiates the precompiled module
 # (Workers cannot compile WebAssembly from bytes at runtime).
 function Build-WorkersPkg {
@@ -171,10 +171,10 @@ if ($bumpBeta) {
     Write-Host "Updating version to $Version in Cargo.toml"
     (Get-Content 'Cargo.toml') -replace "version = `"$currentVersion`"", "version = `"$Version`"" | Set-Content 'Cargo.toml'
 
-    # Update subconverter-wasm dependency version in www/package.json
+    # Update @jat/subconverter-wasm dependency version in www/package.json
     # Only touches entries that already exist, and leaves the file alone if nothing changes
     if (Test-Path 'www/package.json') {
-        $wwwFilter = '(if .dependencies["subconverter-wasm"] then .dependencies["subconverter-wasm"] = $v else . end) | (if .devDependencies["subconverter-wasm"] then .devDependencies["subconverter-wasm"] = $v else . end)'
+        $wwwFilter = '(if .dependencies["@jat/subconverter-wasm"] then .dependencies["@jat/subconverter-wasm"] = $v else . end) | (if .devDependencies["@jat/subconverter-wasm"] then .devDependencies["@jat/subconverter-wasm"] = $v else . end)'
         $lines = jq --arg v $Version $wwwFilter 'www/package.json'
         if ($LASTEXITCODE -ne 0) { throw "jq failed to update www/package.json" }
         Write-JsonFile 'www/package.json.tmp' $lines
@@ -182,7 +182,7 @@ if ($bumpBeta) {
             Remove-Item 'www/package.json.tmp' -Force
         }
         else {
-            Write-Host "Updating subconverter-wasm dependency to $Version in www/package.json"
+            Write-Host "Updating @jat/subconverter-wasm dependency to $Version in www/package.json"
             Move-Item 'www/package.json.tmp' 'www/package.json' -Force
         }
     }
@@ -224,7 +224,7 @@ if ($bumpBeta) {
     # Copy WASM package to www project
     if (Test-Path 'www') {
         Write-Host "Copying WASM files to www project..."
-        $dest = 'www/node_modules/subconverter-wasm'
+        $dest = 'www/node_modules/@jat/subconverter-wasm'
         # if (-not (Test-Path $dest)) {
         #     New-Item -ItemType Directory -Path $dest -Force | Out-Null
         # }
@@ -412,7 +412,7 @@ if (-not $releaseMode) {
 
     if (Test-Path 'www') {
         Write-Host "Copying WASM files to www project..."
-        $dest = 'www/node_modules/subconverter-wasm'
+        $dest = 'www/node_modules/@jat/subconverter-wasm'
         # if (-not (Test-Path $dest)) {
         #     New-Item -ItemType Directory -Path $dest -Force | Out-Null
         # }

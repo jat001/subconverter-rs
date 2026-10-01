@@ -35,7 +35,7 @@ impl GitHubConfig {
             use crate::vfs::vercel_kv_js_bindings::getenv;
 
             Ok(Self {
-                owner: getenv("VFS_GITHUB_OWNER", "lonelam"),
+                owner: getenv("VFS_GITHUB_OWNER", "jat001"),
                 repo: getenv("VFS_GITHUB_REPO", "subconverter-rs"),
                 branch: getenv("VFS_GITHUB_BRANCH", "main"),
                 root_path: getenv("VFS_GITHUB_ROOT_PATH", "base"),
@@ -58,7 +58,7 @@ impl GitHubConfig {
         #[cfg(not(target_arch = "wasm32"))]
         {
             Ok(Self {
-                owner: std::env::var("VFS_GITHUB_OWNER").unwrap_or_else(|_| "lonelam".to_string()),
+                owner: std::env::var("VFS_GITHUB_OWNER").unwrap_or_else(|_| "jat001".to_string()),
                 repo: std::env::var("VFS_GITHUB_REPO")
                     .unwrap_or_else(|_| "subconverter-rs".to_string()),
                 branch: std::env::var("VFS_GITHUB_BRANCH").unwrap_or_else(|_| "main".to_string()),

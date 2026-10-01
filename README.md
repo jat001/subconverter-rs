@@ -7,12 +7,12 @@
 > Transform. Optimize. Simplify. A blazingly fast proxy subscription converter rewritten in Rust.
 
 [![Rust](https://img.shields.io/badge/language-Rust-orange.svg)](https://www.rust-lang.org/)
-[![Status](https://img.shields.io/badge/status-beta-blue.svg)](https://github.com/lonelam/subconverter-rs)
+[![Status](https://img.shields.io/badge/status-beta-blue.svg)](https://github.com/jat001/subconverter-rs)
 [![GPL-3.0+ License](https://img.shields.io/badge/license-GPL--3.0%2B-blue.svg)](LICENSE)
-[![Crates.io](https://img.shields.io/crates/v/subconverter.svg)](https://crates.io/crates/subconverter)
+[![Crates.io](https://img.shields.io/crates/v/subconverter-rs.svg)](https://crates.io/crates/subconverter-rs)
 [![Telegram](https://img.shields.io/badge/Telegram-subconverter_rs-blue.svg)](https://t.me/subconverter_rs)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/35e931d3-b058-466e-88a5-e80247c5efd5/deploy-status)](https://app.netlify.com/sites/subconverter-rs/deploys)
-[![GitHub stars](https://img.shields.io/github/stars/lonelam/subconverter-rs?style=social)](https://github.com/lonelam/subconverter-rs/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/jat001/subconverter-rs?style=social)](https://github.com/jat001/subconverter-rs/stargazers)
 
 </div>
 
@@ -23,7 +23,7 @@ A more powerful utility to convert between proxy subscription formats, transform
 **⚠️ BETA VERSION AVAILABLE ⚠️** - This project is now in beta. Core features are implemented but may still have some rough edges.
 
 🎉 wasm版本白嫖一键部署：
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/lonelam/subconverter-rs&base=www)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jat001/subconverter-rs&base=www)
 
 Demo部署，测试时请注意隐私风险：
 https://subconverter-rs.netlify.app/
@@ -104,26 +104,26 @@ Here are some features planned for future releases:
 Download and run the helper script directly (requires `curl` and `jq`):
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/lonelam/subconverter-rs/main/scripts/setup_and_run_subconverter.sh | bash
+curl -sSL https://raw.githubusercontent.com/jat001/subconverter-rs/main/scripts/setup_and_run_subconverter.sh | bash
 ```
 This downloads the latest release, extracts it to a `subconverter` directory, and starts the server.
 
-(Or manually download from [Releases](https://github.com/lonelam/subconverter-rs/releases/latest)).
+(Or manually download from [Releases](https://github.com/jat001/subconverter-rs/releases/latest)).
 
 ### Docker
 ```bash
-docker pull lonelam/subconverter-rs
-docker run -d -p 25500:25500 lonelam/subconverter-rs
+docker pull ghcr.io/jat001/subconverter-rs
+docker run -d -p 25500:25500 ghcr.io/jat001/subconverter-rs
 ```
 
 ### From Crates.io
 ```bash
-cargo install subconverter
+cargo install subconverter-rs --features web-api
 ```
 
 ### From Source
 ```bash
-git clone https://github.com/lonelam/subconverter-rs.git
+git clone https://github.com/jat001/subconverter-rs.git
 cd subconverter-rs
 cargo build --release --features=web-api
 ```
@@ -133,7 +133,7 @@ The binary will be available at `target/release/subconverter-rs`.
 
 ## 📚 Documentation
 
-Full usage documentation is on the **[project wiki](https://github.com/lonelam/subconverter-rs/wiki)** — getting started (binary/Docker/source), the complete `/sub` parameter reference, protocol/target support matrices, advanced usage (external configs, node filtering syntax) and library/WASM integration. The wiki source is versioned in [`wiki/`](wiki/) in this repo.
+Full usage documentation is on the **[project wiki](https://github.com/jat001/subconverter-rs/wiki)** — getting started (binary/Docker/source), the complete `/sub` parameter reference, protocol/target support matrices, advanced usage (external configs, node filtering syntax) and library/WASM integration. The wiki source is versioned in [`wiki/`](wiki/) in this repo.
 
 ## 🔰 Basic Usage
 
@@ -305,7 +305,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### How to Contribute
 
-1.  **Pick an issue**: Check our [issue tracker](https://github.com/lonelam/subconverter-rs/issues) for tasks labeled `good first issue` or `help wanted`.
+1.  **Pick an issue**: Check our [issue tracker](https://github.com/jat001/subconverter-rs/issues) for tasks labeled `good first issue` or `help wanted`.
 2.  **Implement new proxy types**: Help expand support for additional proxy protocols.
 3.  **Improve parsing**: Enhance the robustness of the various format parsers.
 4.  **Add tests**: Increase test coverage to ensure stability.
@@ -316,8 +316,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## ✨ Contributors
 
-<a href="https://github.com/lonelam/subconverter-rs/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=lonelam/subconverter-rs" />
+<a href="https://github.com/jat001/subconverter-rs/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=jat001/subconverter-rs" />
 </a>
 
 ---

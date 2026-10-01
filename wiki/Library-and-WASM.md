@@ -2,11 +2,11 @@
 
 ## Rust 库（crates.io）
 
-crate 名为 [`subconverter`](https://crates.io/crates/subconverter)（库名 `libsubconverter`）：
+crate 名为 [`subconverter-rs`](https://crates.io/crates/subconverter-rs)（库名 `libsubconverter`）：
 
 ```toml
 [dependencies]
-subconverter = "0.2"
+subconverter-rs = "0.2"
 ```
 
 核心入口是 `SubconverterConfigBuilder` + `subconverter()`，与 HTTP API 走同一条管线：
@@ -39,10 +39,10 @@ builder 上可链式设置与 HTTP 参数一一对应的选项（`include_remark
 
 ## npm 包（WASM）
 
-[`subconverter-wasm`](https://www.npmjs.com/package/subconverter-wasm) 是同一套 Rust 代码的 `wasm32` 构建（`--target nodejs`），面向 Node.js / Serverless：
+[`@jat/subconverter-wasm`](https://www.npmjs.com/package/@jat/subconverter-wasm) 是同一套 Rust 代码的 `wasm32` 构建（`--target nodejs`），面向 Node.js / Serverless：
 
 ```js
-const wasm = require('subconverter-wasm');
+const wasm = require('@jat/subconverter-wasm');
 
 // 初始化 KV 绑定与配置（Serverless 环境下文件读写走 KV 虚拟文件系统）
 wasm.admin_init_kv_bindings_js();
@@ -70,7 +70,7 @@ const resp = await wasm.sub_process_wasm(JSON.stringify({
 
 ## 自部署 Netlify（Web GUI + Serverless API）
 
-`www/` 目录即在线服务的完整实现（Next.js 15 + `subconverter-wasm`）：
+`www/` 目录即在线服务的完整实现（Next.js 15 + `@jat/subconverter-wasm`）：
 
 1. Fork 本仓库，在 Netlify 新建站点指向 fork，设置 base directory 为 `www`（`www/netlify.toml` 已含构建配置）
 2. Netlify 会构建 Next.js 前端，并把 `/api/*` 作为 Serverless Functions 运行 WASM 转换
@@ -81,10 +81,10 @@ const resp = await wasm.sub_process_wasm(JSON.stringify({
 ```bash
 cd www
 pnpm install
-pnpm dev              # 使用 npm 上已发布的 subconverter-wasm
+pnpm dev              # 使用 npm 上已发布的 @jat/subconverter-wasm
 pnpm rebuild:wasm:dev # 或者：本地重新构建 wasm 后再启动（需 wasm-pack、jq）
 ```
 
 ## 版本对应关系
 
-`Cargo.toml` 的版本驱动一切：`www/package.json` 锁定同版本的 `subconverter-wasm`。发版用 `./scripts/build-wasm.sh --bump-patch`，会自动提交并推送 `v{X.Y.Z}-attempt{N}` 标签，触发 GitHub Actions 发布 npm 包、crates.io、各平台二进制与 Docker 镜像。
+`Cargo.toml` 的版本驱动一切：`www/package.json` 锁定同版本的 `@jat/subconverter-wasm`。发版用 `./scripts/build-wasm.sh --bump-patch`，会自动提交并推送 `v{X.Y.Z}-attempt{N}` 标签，触发 GitHub Actions 发布 npm 包、crates.io、各平台二进制与 Docker 镜像。

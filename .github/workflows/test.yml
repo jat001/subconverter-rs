@@ -81,7 +81,7 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@12
 
-      # www resolves subconverter-wasm to ../pkg (see www/pnpm-workspace.yaml), so build it first
+      # www resolves @jat/subconverter-wasm to ../pkg (see www/pnpm-workspace.yaml), so build it first
       - name: Build WASM package (dev)
         run: ./scripts/build-wasm.sh
 

@@ -8,7 +8,7 @@ Rust rewrite of the C++ subconverter: converts proxy subscriptions between forma
 
 1. **Native HTTP server / CLI** — binary `subconverter` (actix-web, port 25500). The binary requires the `web-api` feature; plain `cargo build` compiles only the library.
 2. **Rust library** — `libsubconverter` (rlib).
-3. **WASM package** — `subconverter-wasm` npm package (cdylib via wasm-pack, `--target nodejs`), consumed by the Next.js frontend in `www/` and deployed as Netlify serverless functions. The same package ships a Cloudflare Workers build at `subconverter-wasm/workers` (`--target web` into `pkg/workers/`, entry files in `wasm-host/workers/`), because Workers cannot compile WASM from bytes at runtime.
+3. **WASM package** — `@jat/subconverter-wasm` npm package (cdylib via wasm-pack, `--target nodejs`), consumed by the Next.js frontend in `www/` and deployed as Netlify serverless functions. The same package ships a Cloudflare Workers build at `@jat/subconverter-wasm/workers` (`--target web` into `pkg/workers/`, entry files in `wasm-host/workers/`), because Workers cannot compile WASM from bytes at runtime.
 
 ## Commands
 
@@ -28,7 +28,7 @@ cd wasm-host && pnpm test                    # TS host bindings: build src/ -> d
 # Type-check the wasm side (rustup target add wasm32-unknown-unknown first)
 cargo check --target wasm32-unknown-unknown
 
-# WASM dev build: wasm-pack build, rename to subconverter-wasm, copy into www/node_modules/
+# WASM dev build: wasm-pack build, rename to @jat/subconverter-wasm, copy into www/node_modules/
 ./scripts/build-wasm.sh                      # needs wasm-pack, jq, pnpm
 
 # Frontend (www/, Node >= 20, pnpm)
@@ -43,7 +43,7 @@ CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo fm
 
 ## Release flow
 
-Version in `Cargo.toml` drives everything; `www/package.json` pins the matching `subconverter-wasm` version. `./scripts/build-wasm.sh --bump-patch` bumps the version, commits, and pushes a `v{X.Y.Z}-attempt{N}` tag that triggers the GitHub Actions release (npm + crates.io + binaries). `--bump-beta` (non-main branch only) publishes an npm beta and deploys a Netlify preview. Both require a clean git tree.
+Version in `Cargo.toml` drives everything; `www/package.json` pins the matching `@jat/subconverter-wasm` version. `./scripts/build-wasm.sh --bump-patch` bumps the version, commits, and pushes a `v{X.Y.Z}-attempt{N}` tag that triggers the GitHub Actions release (npm + crates.io + binaries). `--bump-beta` (non-main branch only) publishes an npm beta and deploys a Netlify preview. Both require a clean git tree.
 
 ## Architecture
 
@@ -62,7 +62,7 @@ The conversion pipeline is **parse → transform → generate**, orchestrated in
 - `src/settings/` — global `Settings` singleton (`Settings::current()`); loads `pref.toml` → `pref.yml` → `pref.ini` in that priority order. `external/` handles the `&config=` external configs.
 - `src/template/` — minijinja-based template rendering for base configs.
 - `base/` — runtime data, not code: example prefs, base config templates, rules, snippets. The server reads these at runtime.
-- `www/` — Next.js 15 App Router frontend (TypeScript, Tailwind 4, next-intl); calls `subconverter-wasm` from Netlify functions. Deployed via `www/netlify.toml`.
+- `www/` — Next.js 15 App Router frontend (TypeScript, Tailwind 4, next-intl); calls `@jat/subconverter-wasm` from Netlify functions. Deployed via `www/netlify.toml`.
 
 ### Dual-target constraint
 

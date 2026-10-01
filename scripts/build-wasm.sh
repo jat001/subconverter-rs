@@ -67,7 +67,8 @@ update_pkg_json() {
   local pkg_version="$1"
   local tmp=pkg/package.json.tmp
   jq --arg ver "$pkg_version" --slurpfile host "$HOST_PKG_JSON" '
-    .name = "subconverter-wasm"
+    .name = "@jat/subconverter-wasm"
+    | .publishConfig = {"access": "public"}
     | .version = $ver
     | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f))
     | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))
@@ -84,7 +85,7 @@ update_pkg_json() {
   fi
 }
 
-# Cloudflare Workers build, published as `subconverter-wasm/workers`: the same crate through
+# Cloudflare Workers build, published as `@jat/subconverter-wasm/workers`: the same crate through
 # `--target web`, plus the entry in wasm-host/workers/ that instantiates the precompiled module
 # (Workers cannot compile WebAssembly from bytes at runtime).
 build_workers_pkg() {
@@ -168,17 +169,17 @@ if [ "$BUMP_BETA" = true ]; then
   echo "Updating version to $VERSION in Cargo.toml"
   sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$VERSION\"/" Cargo.toml
 
-  # Update subconverter-wasm dependency version in www/package.json if it exists
+  # Update @jat/subconverter-wasm dependency version in www/package.json if it exists
   # Only touches entries that already exist, and leaves the file alone if nothing changes
   if [ -f "www/package.json" ]; then
     jq --arg v "$VERSION" '
-      (if .dependencies["subconverter-wasm"] then .dependencies["subconverter-wasm"] = $v else . end)
-      | (if .devDependencies["subconverter-wasm"] then .devDependencies["subconverter-wasm"] = $v else . end)
+      (if .dependencies["@jat/subconverter-wasm"] then .dependencies["@jat/subconverter-wasm"] = $v else . end)
+      | (if .devDependencies["@jat/subconverter-wasm"] then .devDependencies["@jat/subconverter-wasm"] = $v else . end)
     ' www/package.json >www/package.json.tmp
     if [ "$(jq -S . www/package.json)" = "$(jq -S . www/package.json.tmp)" ]; then
       rm -f www/package.json.tmp
     else
-      echo "Updating subconverter-wasm dependency to $VERSION in www/package.json"
+      echo "Updating @jat/subconverter-wasm dependency to $VERSION in www/package.json"
       mv www/package.json.tmp www/package.json
     fi
   fi
@@ -216,12 +217,12 @@ if [ "$BUMP_BETA" = true ]; then
   # Copy WASM package to www project
   if [ -d "www" ]; then
     echo "Copying WASM files to www project..."
-    # mkdir -p www/node_modules/subconverter-wasm
+    # mkdir -p www/node_modules/@jat/subconverter-wasm
     # Clear existing content first
-    # rm -rf www/node_modules/subconverter-wasm/*
+    # rm -rf www/node_modules/@jat/subconverter-wasm/*
     # Copy new build
-    # cp -r pkg/* www/node_modules/subconverter-wasm/
-    echo "Successfully copied WASM files to www/node_modules/subconverter-wasm"
+    # cp -r pkg/* www/node_modules/@jat/subconverter-wasm/
+    echo "Successfully copied WASM files to www/node_modules/@jat/subconverter-wasm"
 
     # Deploy www project to Netlify preview
     echo "Deploying www project to Netlify preview..."
@@ -412,12 +413,12 @@ if [ "$RELEASE_MODE" = false ]; then
     echo "Copying WASM files to www project..."
 
     # Create necessary directories
-    # mkdir -p www/node_modules/subconverter-wasm
+    # mkdir -p www/node_modules/@jat/subconverter-wasm
 
-    # Copy all files from pkg to www/node_modules/subconverter-wasm
-    # cp -r pkg/* www/node_modules/subconverter-wasm/
+    # Copy all files from pkg to www/node_modules/@jat/subconverter-wasm
+    # cp -r pkg/* www/node_modules/@jat/subconverter-wasm/
 
-    echo "Successfully copied WASM files to www/node_modules/subconverter-wasm"
+    echo "Successfully copied WASM files to www/node_modules/@jat/subconverter-wasm"
     echo "Note: You'll need to run this script again after any changes to the WASM code"
   else
     echo "Warning: www directory not found, skipping copy to www project"

@@ -7,9 +7,9 @@
 > 一个高性能代理订阅转换工具，从 C++ 版本的 subconverter 转换为 Rust 实现
 
 [![Rust](https://img.shields.io/badge/language-Rust-orange.svg)](https://www.rust-lang.org/)
-[![Status](https://img.shields.io/badge/status-beta-blue.svg)](https://github.com/lonelam/subconverter-rs)
+[![Status](https://img.shields.io/badge/status-beta-blue.svg)](https://github.com/jat001/subconverter-rs)
 [![GPL-3.0+ License](https://img.shields.io/badge/license-GPL--3.0%2B-blue.svg)](LICENSE)
-[![Crates.io](https://img.shields.io/crates/v/subconverter.svg)](https://crates.io/crates/subconverter)
+[![Crates.io](https://img.shields.io/crates/v/subconverter-rs.svg)](https://crates.io/crates/subconverter-rs)
 [![Telegram](https://img.shields.io/badge/Telegram-subconverter_rs-blue.svg)](https://t.me/subconverter_rs)
 
 ---
@@ -19,7 +19,7 @@ A more powerful utility to convert between proxy subscription formats, transform
 **⚠️ BETA VERSION AVAILABLE ⚠️** - This project is now in beta. Core features are implemented but may still have some rough edges.
 
 🎉 wasm版本白嫖一键部署：
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/lonelam/subconverter-rs&base=www)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jat001/subconverter-rs&base=www)
 
 Demo部署，测试时请注意隐私风险：
 https://subconverter-rs.netlify.app/
@@ -33,26 +33,26 @@ https://subconverter-rs.netlify.app/
 直接下载并运行辅助脚本 (需要 `curl` 和 `jq`):
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/lonelam/subconverter-rs/main/scripts/setup_and_run_subconverter.sh | bash
+curl -sSL https://raw.githubusercontent.com/jat001/subconverter-rs/main/scripts/setup_and_run_subconverter.sh | bash
 ```
 此命令会下载最新版本，解压到 `subconverter` 目录，并启动服务。
 
-(或手动从 [Releases](https://github.com/lonelam/subconverter-rs/releases/latest) 下载)。
+(或手动从 [Releases](https://github.com/jat001/subconverter-rs/releases/latest) 下载)。
 
 ### Docker
 ```bash
-docker pull lonelam/subconverter-rs
-docker run -d -p 25500:25500 lonelam/subconverter-rs
+docker pull ghcr.io/jat001/subconverter-rs
+docker run -d -p 25500:25500 ghcr.io/jat001/subconverter-rs
 ```
 
 ### 从 Crates.io 获取
 ```bash
-cargo install subconverter
+cargo install subconverter-rs --features web-api
 ```
 
 ### 从源码编译
 ```bash
-git clone https://github.com/lonelam/subconverter-rs.git
+git clone https://github.com/jat001/subconverter-rs.git
 cd subconverter-rs
 cargo build --release --features=web-api
 ```
@@ -64,7 +64,7 @@ cargo build --release --features=web-api
 
 ## 📚 文档
 
-完整使用文档见 **[项目 Wiki](https://github.com/lonelam/subconverter-rs/wiki)** —— 快速开始（二进制/Docker/源码）、`/sub` 完整参数表、协议与目标格式支持矩阵、进阶用法（外部配置、节点筛选语法）以及库/WASM 集成方式。Wiki 源文件随代码版本化在仓库的 [`wiki/`](wiki/) 目录。
+完整使用文档见 **[项目 Wiki](https://github.com/jat001/subconverter-rs/wiki)** —— 快速开始（二进制/Docker/源码）、`/sub` 完整参数表、协议与目标格式支持矩阵、进阶用法（外部配置、节点筛选语法）以及库/WASM 集成方式。Wiki 源文件随代码版本化在仓库的 [`wiki/`](wiki/) 目录。
 
 ## 📋 目录
 

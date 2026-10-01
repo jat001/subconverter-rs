@@ -23,11 +23,11 @@ console.log('✅ Deploy environment:', deployEnv);
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Allows importing wasm files from pkg directory
-  // transpilePackages: ['subconverter-wasm'],
+  // transpilePackages: ['@jat/subconverter-wasm'],
 
   // Using serverExternalPackages to tell Next.js to resolve the WASM module at runtime
   // This ensures proper WASM loading in server environments like Netlify
-  serverExternalPackages: ['subconverter-wasm'],
+  serverExternalPackages: ['@jat/subconverter-wasm'],
 
   rewrites() {
     return [

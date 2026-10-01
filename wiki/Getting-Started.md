@@ -13,7 +13,7 @@
 
 ## 方式二：下载预编译二进制
 
-在 [Releases](https://github.com/lonelam/subconverter-rs/releases) 下载对应平台的压缩包：
+在 [Releases](https://github.com/jat001/subconverter-rs/releases) 下载对应平台的压缩包：
 
 | 文件 | 平台 |
 |------|------|
@@ -45,7 +45,7 @@ curl "http://127.0.0.1:25500/sub?target=clash&url=<URL 编码后的订阅链接>
 
 ```bash
 docker run -d --name subconverter -p 25500:25500 \
-  ghcr.io/lonelam/subconverter-rs:<版本标签>-amd64
+  ghcr.io/jat001/subconverter-rs:<版本标签>-amd64
 # ARM64 主机使用 -arm64 后缀的标签
 ```
 
@@ -54,7 +54,7 @@ docker run -d --name subconverter -p 25500:25500 \
 ```bash
 docker run -d -p 25500:25500 \
   -v $(pwd)/pref.yml:/app/pref.yml \
-  ghcr.io/lonelam/subconverter-rs:<版本标签>-amd64
+  ghcr.io/jat001/subconverter-rs:<版本标签>-amd64
 ```
 
 ## 方式四：源码构建
@@ -62,7 +62,7 @@ docker run -d -p 25500:25500 \
 需要 Rust 工具链（stable）：
 
 ```bash
-git clone https://github.com/lonelam/subconverter-rs.git
+git clone https://github.com/jat001/subconverter-rs.git
 cd subconverter-rs
 cargo build --release --features web-api          # 二进制必须启用 web-api 特性
 # 可选：JS 脚本支持（filter=/sort_script= 参数）
