@@ -5,7 +5,8 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  // Build output (flat config does not read .gitignore)
+  globalIgnores([".next/**", ".vercel/**", ".netlify/**", "out/**", "build/**", "next-env.d.ts"]),
   {
     // eslint-plugin-react's "detect" calls context.getFilename(), which ESLint 10 removed
     settings: { react: { version: "19" } },
