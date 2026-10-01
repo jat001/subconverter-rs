@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminAuth } from '@/lib/admin-auth';
 import { loadWasmSingleton } from '@/lib/wasm';
 
 // Define correct types for route parameters according to Next.js 15
@@ -99,6 +100,9 @@ export async function GET(
     request: NextRequest,
     { params }: RouteParams
 ) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     let wasmModule;
     try {
         wasmModule = await loadWasmSingleton('Admin');
@@ -153,6 +157,9 @@ export async function POST(
     request: NextRequest,
     { params }: RouteParams
 ) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     let wasmModule;
     try {
         wasmModule = await loadWasmSingleton('Admin');
@@ -217,6 +224,9 @@ export async function PUT(
     request: NextRequest,
     { params }: RouteParams
 ) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     return POST(request, { params });
 }
 
@@ -224,6 +234,9 @@ export async function DELETE(
     request: NextRequest,
     { params }: RouteParams
 ) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     let wasmModule;
     try {
         wasmModule = await loadWasmSingleton('Admin');

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminAuth } from '@/lib/admin-auth';
 import { loadWasmSingleton } from '@/lib/wasm';
 
 // Add a type definition for the WASM module
@@ -12,6 +13,9 @@ interface AdminWasmModule {
  * Handle GitHub content loading requests
  */
 export async function POST(request: NextRequest) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     let wasmModule: AdminWasmModule;
     try {
         wasmModule = await loadWasmSingleton('Admin') as AdminWasmModule;
@@ -69,6 +73,9 @@ export async function POST(request: NextRequest) {
  * Support GET for convenience, using query parameters
  */
 export async function GET(request: NextRequest) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     let wasmModule: AdminWasmModule;
     try {
         wasmModule = await loadWasmSingleton('Admin-GitHubAPI') as AdminWasmModule;

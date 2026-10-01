@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { FileAttributes } from '@jat/subconverter-wasm';
+import { adminFetch } from './admin-token';
 
 /**
  * Response data from the subscription converter API
@@ -155,7 +156,7 @@ export async function convertSubscription(formData: Partial<SubconverterFormPara
  * Update rules from configured GitHub repositories
  */
 export async function updateRules(configPath?: string): Promise<RulesUpdateResult> {
-    const response = await fetch('/api/admin/rules/update', {
+    const response = await adminFetch('/api/admin/rules/update', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -183,14 +184,26 @@ export async function updateRules(configPath?: string): Promise<RulesUpdateResul
 }
 
 /**
+ * Error from an admin API call, carrying the HTTP status (e.g. 404 for a missing file, 401 when unauthorized)
+ */
+export class AdminApiError extends Error {
+    status: number;
+
+    constructor(message: string, status: number) {
+        super(message);
+        this.status = status;
+    }
+}
+
+/**
  * Read file content from the server
  */
 export async function readFile(path: string): Promise<string> {
-    const response = await fetch(`/api/admin/${encodeURIComponent(path)}`);
+    const response = await adminFetch(`/api/admin/${encodeURIComponent(path)}`);
 
     if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || `Failed to read file: ${response.statusText}`);
+        throw new AdminApiError(data.error || `Failed to read file: ${response.statusText}`, response.status);
     }
 
     const data = await response.json();
@@ -201,7 +214,7 @@ export async function readFile(path: string): Promise<string> {
  * Write content to a file on the server
  */
 export async function writeFile(path: string, content: string): Promise<void> {
-    const response = await fetch(`/api/admin/${encodeURIComponent(path)}`, {
+    const response = await adminFetch(`/api/admin/${encodeURIComponent(path)}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -219,7 +232,7 @@ export async function writeFile(path: string, content: string): Promise<void> {
  * Delete a file or directory on the server
  */
 export async function deleteFile(path: string): Promise<void> {
-    const response = await fetch(`/api/admin/${encodeURIComponent(path)}`, {
+    const response = await adminFetch(`/api/admin/${encodeURIComponent(path)}`, {
         method: 'DELETE',
     });
 
@@ -233,7 +246,7 @@ export async function deleteFile(path: string): Promise<void> {
  * Check if a file exists on the server
  */
 export async function checkFileExists(path: string): Promise<boolean> {
-    const response = await fetch(`/api/admin/${encodeURIComponent(path)}?exists=true`);
+    const response = await adminFetch(`/api/admin/${encodeURIComponent(path)}?exists=true`);
 
     if (!response.ok) {
         return false;
@@ -247,7 +260,7 @@ export async function checkFileExists(path: string): Promise<boolean> {
  * Get file attributes from the server
  */
 export async function getFileAttributes(path: string): Promise<FileAttributes> {
-    const response = await fetch(`/api/admin/${encodeURIComponent(path)}?attributes=true`);
+    const response = await adminFetch(`/api/admin/${encodeURIComponent(path)}?attributes=true`);
 
     if (!response.ok) {
         const data = await response.json();
@@ -262,7 +275,7 @@ export async function getFileAttributes(path: string): Promise<FileAttributes> {
  * Create a directory on the server
  */
 export async function createDirectory(path: string): Promise<void> {
-    const response = await fetch(`/api/admin/${encodeURIComponent(path)}`, {
+    const response = await adminFetch(`/api/admin/${encodeURIComponent(path)}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -280,7 +293,7 @@ export async function createDirectory(path: string): Promise<void> {
  * List files in a directory
  */
 export async function listDirectory(path: string = ''): Promise<any> {
-    const response = await fetch(`/api/admin/list?path=${encodeURIComponent(path)}`);
+    const response = await adminFetch(`/api/admin/list?path=${encodeURIComponent(path)}`);
 
     if (!response.ok) {
         const data = await response.json();
@@ -298,7 +311,7 @@ export async function loadGitHubDirectory(
     shallow: boolean = true,
     recursive: boolean = true
 ): Promise<any> {
-    const response = await fetch(
+    const response = await adminFetch(
         `/api/admin/github?path=${encodeURIComponent(path)}&shallow=${shallow}&recursive=${recursive}`
     );
 
@@ -355,7 +368,7 @@ export interface CreateShortUrlRequest {
  * Create a new short URL
  */
 export async function createShortUrl(request: CreateShortUrlRequest): Promise<ShortUrlData> {
-    const response = await fetch('/api/s', {
+    const response = await adminFetch('/api/s', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -383,7 +396,7 @@ export async function createShortUrl(request: CreateShortUrlRequest): Promise<Sh
  * Get list of all short URLs
  */
 export async function listShortUrls(): Promise<ShortUrlData[]> {
-    const response = await fetch('/api/s');
+    const response = await adminFetch('/api/s');
 
     if (!response.ok) {
         const text = await response.text();
@@ -406,7 +419,7 @@ export async function listShortUrls(): Promise<ShortUrlData[]> {
  * Delete a short URL
  */
 export async function deleteShortUrl(id: string): Promise<void> {
-    const response = await fetch(`/api/s/${encodeURIComponent(id)}`, {
+    const response = await adminFetch(`/api/s/${encodeURIComponent(id)}`, {
         method: 'DELETE',
     });
 
@@ -428,7 +441,7 @@ export async function deleteShortUrl(id: string): Promise<void> {
  * Update a short URL
  */
 export async function updateShortUrl(id: string, updates: { target_url?: string; description?: string | null; custom_id?: string }): Promise<ShortUrlData> {
-    const response = await fetch(`/api/s/${encodeURIComponent(id)}`, {
+    const response = await adminFetch(`/api/s/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -456,7 +469,7 @@ export async function updateShortUrl(id: string, updates: { target_url?: string;
  * Move a short URL to a new ID/alias
  */
 export async function moveShortUrl(id: string, newId: string): Promise<ShortUrlData> {
-    const response = await fetch(`/api/s/${encodeURIComponent(id)}/move`, {
+    const response = await adminFetch(`/api/s/${encodeURIComponent(id)}/move`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -546,7 +559,7 @@ export function getDownloadUrl(appId: string, platform: string): string {
  * This is only available to admin users
  */
 export async function getDownloadConfigs(): Promise<AppDownloadConfig[]> {
-    const response = await fetch('/api/admin/downloads');
+    const response = await adminFetch('/api/admin/downloads');
 
     if (!response.ok) {
         const text = await response.text();
@@ -570,7 +583,7 @@ export async function getDownloadConfigs(): Promise<AppDownloadConfig[]> {
  * This is only available to admin users
  */
 export async function updateDownloadConfigs(downloads: AppDownloadConfig[]): Promise<boolean> {
-    const response = await fetch('/api/admin/downloads', {
+    const response = await adminFetch('/api/admin/downloads', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -675,7 +688,7 @@ export interface ServerSettings {
  * Get current server settings
  */
 export async function getServerSettings(): Promise<ServerSettings> {
-    const response = await fetch('/api/admin/settings');
+    const response = await adminFetch('/api/admin/settings');
 
     if (!response.ok) {
         const text = await response.text();
@@ -697,7 +710,7 @@ export async function getServerSettings(): Promise<ServerSettings> {
  * Update server settings
  */
 export async function updateServerSettings(settings: Partial<ServerSettings>): Promise<ServerSettings> {
-    const response = await fetch('/api/admin/settings', {
+    const response = await adminFetch('/api/admin/settings', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -725,7 +738,7 @@ export async function updateServerSettings(settings: Partial<ServerSettings>): P
  * Export settings to file
  */
 export async function exportSettings(format: 'yaml' | 'toml' | 'ini' = 'yaml'): Promise<Blob> {
-    const response = await fetch(`/api/admin/settings/export?format=${format}`);
+    const response = await adminFetch(`/api/admin/settings/export?format=${format}`);
 
     if (!response.ok) {
         const text = await response.text();
@@ -750,7 +763,7 @@ export async function importSettings(file: File): Promise<ServerSettings> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('/api/admin/settings/import', {
+    const response = await adminFetch('/api/admin/settings/import', {
         method: 'POST',
         body: formData,
     });
@@ -784,8 +797,10 @@ export async function readSettingsFile(): Promise<string> {
         try {
             // Attempt to read pref.yml directly first
             return await readFile('pref.yml');
-        } catch {
-            // If pref.yml doesn't exist or can't be read, create it from example
+        } catch (error) {
+            // Only a missing pref.yml is created from the example; any other failure (unauthorized,
+            // server error) must not overwrite an existing one
+            if (!(error instanceof AdminApiError && error.status === 404)) throw error;
             console.log("pref.yml not found, creating from example...");
             const exampleContent = await readFile('pref.example.yml');
             await writeFile('pref.yml', exampleContent);

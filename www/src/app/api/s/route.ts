@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminAuth } from '@/lib/admin-auth';
 import { loadWasmSingleton } from '@/lib/wasm';
 
 /**
  * Handle short URL creation requests
  */
 export async function POST(request: NextRequest) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     try {
         // Load the WASM module
         const wasmModule = await loadWasmSingleton('ShortURL');
@@ -37,6 +41,9 @@ export async function POST(request: NextRequest) {
  * Handle listing all short URLs
  */
 export async function GET(request: NextRequest) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     try {
         // Load the WASM module
         const wasmModule = await loadWasmSingleton('ShortURL');

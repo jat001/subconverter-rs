@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminAuth } from '@/lib/admin-auth';
 import { loadWasmSingleton } from '@/lib/wasm';
 
 /**
  * Handle directory listing requests
  */
 export async function GET(request: NextRequest) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     let wasmModule;
     try {
         wasmModule = await loadWasmSingleton('Admin');

@@ -340,5 +340,11 @@
         "uploadPathLabel": "Upload Gist Path",
         "uploadPathPlaceholder": "e.g., profiles/my_config.yaml",
         "uploadPathHelp": "Path on the server to save the converted result (requires server enablement)"
+    },
+    "AdminAuth": {
+        "title": "Admin token required",
+        "description": "Enter the ADMIN_TOKEN configured on the server to use the admin features.",
+        "invalid": "The admin token was rejected. Please check it and try again.",
+        "placeholder": "Admin token"
     }
 }

@@ -343,5 +343,11 @@
         "uploadPathLabel": "上传Gist路径",
         "uploadPathPlaceholder": "例如：profiles/my_config.yaml",
         "uploadPathHelp": "在服务器上保存转换结果的路径（需要服务器启用）"
+    },
+    "AdminAuth": {
+        "title": "需要管理员令牌",
+        "description": "请输入服务器上配置的 ADMIN_TOKEN 以使用管理功能。",
+        "invalid": "管理员令牌无效，请检查后重试。",
+        "placeholder": "管理员令牌"
     }
 }

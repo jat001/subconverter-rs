@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import AppInitializer from "@/components/AppInitializer";
+import AdminTokenDialog from "@/components/AdminTokenDialog";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,6 +41,7 @@ export default async function RootLayout({
           <AppInitializer>
             {children}
           </AppInitializer>
+          <AdminTokenDialog />
         </NextIntlClientProvider>
       </body>
     </html>

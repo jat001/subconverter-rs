@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminAuth } from '@/lib/admin-auth';
 import { loadWasmSingleton } from '@/lib/wasm';
 
 type RouteParams = any;
@@ -59,6 +60,9 @@ export async function DELETE(
     request: NextRequest,
     context: RouteParams
 ) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     // Get the short URL ID from the route parameter
     const { id } = await context.params;
 
@@ -100,6 +104,9 @@ export async function PUT(
     request: NextRequest,
     context: RouteParams
 ) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     // Get the short URL ID from the route parameter
     const { id } = await context.params;
 

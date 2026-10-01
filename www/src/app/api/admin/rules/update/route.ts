@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminAuth } from '@/lib/admin-auth';
 
 import { loadWasmSingleton } from '@/lib/wasm';
 
@@ -9,6 +10,9 @@ interface WasmModule {
 }
 
 export async function POST(request: NextRequest) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     try {
         // Load the WASM module and get the admin_update_rules function
         const wasm = await loadWasmSingleton('Admin') as unknown as WasmModule;
@@ -66,7 +70,10 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const denied = await checkAdminAuth(request);
+    if (denied) return denied;
+
     return NextResponse.json(
         {
             message: 'Rules update endpoint is available',
