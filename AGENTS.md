@@ -39,6 +39,8 @@ pnpm lint
 
 Optional cargo feature `js-runtime` (rquickjs, non-wasm only) enables JS scripting support; CI release builds use `--features=web-api,js-runtime`.
 
+CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo test`, `cargo check --lib --target wasm32-unknown-unknown`, and the wasm-host typecheck/tests, and fails if the committed `wasm-host/dist/` is stale.
+
 ## Release flow
 
 Version in `Cargo.toml` drives everything; `www/package.json` pins the matching `subconverter-wasm` version. `./scripts/build-wasm.sh --bump-patch` bumps the version, commits, and pushes a `v{X.Y.Z}-attempt{N}` tag that triggers the GitHub Actions release (npm + crates.io + binaries). `--bump-beta` (non-main branch only) publishes an npm beta and deploys a Netlify preview. Both require a clean git tree.
@@ -53,7 +55,7 @@ The conversion pipeline is **parse → transform → generate**, orchestrated in
   - `clash/` — the bidirectional Clash schema: one `Serialize + Deserialize` struct per protocol used for BOTH parsing and generation, so parse → emit roundtrips are lossless by construction (see the idempotence test in `clash/mod.rs`). `ClashProxyYamlInput` (parser) and `ClashProxyOutput` (generator) are aliases of this shared `ClashProxy` enum.
   - `target_profile.rs` — `ClashFlavor` (mihomo/premium/stash, chosen by the `flavor=` query param) and the `ClashCapabilities` matrix. `proxy_to_clash` consults it to drop unsupported protocols and strip unsupported fields per flavor. Client-version differences belong here, not in scattered conditionals.
 - `src/generator/` — output side. `config/formats/` has one module per target (`proxy_to_surge`, `proxy_to_singbox`, …) plus `exports/proxy_to_clash.rs`; `ruleconvert/` converts rulesets between target formats. Emitters read protocol data only through the typed IR accessors.
-  - `golden_tests.rs` + `testdata/*.golden` — golden output tests: a 12-protocol fixture rendered through every emitter, byte-compared against checked-in files. Any output change shows up as a golden diff; update intentionally with `cargo test --lib regenerate_goldens -- --ignored`.
+  - `golden_tests.rs` + `testdata/*.golden` — golden output tests: a fixture with one node per supported protocol rendered through every emitter, byte-compared against checked-in files. Any output change shows up as a golden diff; update intentionally with `cargo test --lib regenerate_goldens -- --ignored`.
 - `src/web_handlers/` (`web-api` feature) — actix-web endpoints (`/sub`, `/surge2clash`, …). `main.rs` starts the server; CLI direct mode routes a synthetic request through the same handlers via actix's test service.
 - `src/api/` — WASM-facing `#[wasm_bindgen]` exports (sub, admin, rules, short_urls; mostly `cfg(target_arch = "wasm32")`).
 - `src/vfs/` (wasm only) — virtual file system over Upstash Redis (Vercel KV) / Cloudflare Workers KV / Netlify Blobs through host bindings in `wasm-host/src/kv_bindings.ts` (TypeScript, compiled to `wasm-host/dist/kv_bindings.js`, which the `#[wasm_bindgen(module = ...)]` imports reference; dist is committed because wasm-bindgen reads it at compile time, so rebuild it with `pnpm build` after editing the source; npm deps declared in `wasm-host/package.json` are merged into the published package by the build scripts), with lazy loading of missing files from GitHub. In the WASM build, "file" reads for configs/rules go through this.

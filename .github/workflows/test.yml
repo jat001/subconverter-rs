@@ -1,0 +1,77 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+
+      # Includes the golden output tests (src/generator/golden_tests.rs); if an output change is
+      # intended, run `cargo test --lib regenerate_goldens -- --ignored` and commit the goldens
+      - name: Run tests
+        run: cargo test
+
+      # Shared code (parser, generator, settings, utils) must keep compiling for the WASM build
+      - name: Check WASM target
+        run: cargo check --lib --target wasm32-unknown-unknown
+
+  wasm-host:
+    name: wasm-host tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wasm-host
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@12
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      # wasm-bindgen embeds the committed dist/kv_bindings.js; `pnpm test` rebuilt it from src/
+      - name: Check dist is up to date
+        run: |
+          git diff --exit-code -- dist || {
+            echo "::error::wasm-host/dist is out of date; run 'pnpm build' in wasm-host and commit the result"
+            exit 1
+          }
