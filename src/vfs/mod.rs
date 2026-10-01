@@ -71,7 +71,7 @@ pub enum VfsError {
 pub mod wasm_helpers {
     use super::{VercelKvVfs, VfsError};
     use crate::utils::file_wasm;
-    use serde_json::{json, Value};
+    use serde_json::json;
     use wasm_bindgen::prelude::*;
 
     /// Helper to get the VFS instance (WASM only).

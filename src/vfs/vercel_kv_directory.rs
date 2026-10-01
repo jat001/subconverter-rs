@@ -1,14 +1,11 @@
 use crate::log_debug;
-use crate::utils::string::{
-    build_dir_entry_path, build_file_entry_path, normalize_dir_path, normalize_file_path,
-};
+use crate::utils::string::{build_dir_entry_path, build_file_entry_path, normalize_dir_path};
 use crate::vfs::vercel_kv_helpers::*;
 use crate::vfs::vercel_kv_store::{create_directory_attributes, create_file_attributes};
 use crate::vfs::vercel_kv_types::*;
 use crate::vfs::vercel_kv_vfs::VercelKvVfs;
 use crate::vfs::VfsError;
 use crate::vfs::VirtualFileSystem;
-use std::collections::{HashMap, HashSet};
 
 impl VercelKvVfs {
     /// Read file or directory attributes

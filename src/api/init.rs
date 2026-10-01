@@ -1,11 +1,9 @@
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-use crate::utils::file_wasm;
 use crate::vfs::wasm_helpers::{get_vfs, vfs_error_to_js};
-use crate::vfs::{VercelKvVfs, VfsError, VirtualFileSystem};
+use crate::vfs::VirtualFileSystem;
 use log;
-use serde_json::{json, Value};
 
 // --- Wasm Bindgen Exports ---
 

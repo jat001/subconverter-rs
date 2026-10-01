@@ -6,7 +6,6 @@ use crate::vfs::VfsError;
 use serde_json;
 use serde_wasm_bindgen;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 use tokio::sync::RwLock;

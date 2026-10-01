@@ -1,13 +1,9 @@
 use crate::api::rules::RulesUpdateRequest;
-use crate::vfs::vercel_kv_helpers::get_directory_marker_key;
-use crate::vfs::vercel_kv_js_bindings::{dummy, kv_exists, kv_list};
-use crate::vfs::vercel_kv_vfs::VercelKvVfs;
+use crate::vfs::vercel_kv_js_bindings::dummy;
 use crate::vfs::wasm_helpers::{get_vfs, vfs_error_to_js};
-use crate::vfs::{DirectoryEntry, FileAttributes, VfsError, VirtualFileSystem};
+use crate::vfs::{DirectoryEntry, FileAttributes, VirtualFileSystem};
 
 use log::{error, info};
-use serde_json::{json, Value};
-use std::collections::HashMap;
 
 use wasm_bindgen::prelude::*;
 // --- Wasm Bindgen Exports ---

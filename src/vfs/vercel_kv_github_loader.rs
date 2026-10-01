@@ -8,7 +8,7 @@ use crate::vfs::vercel_kv_types::*;
 use crate::vfs::vercel_kv_vfs::VercelKvVfs;
 use crate::vfs::VfsError;
 use case_insensitive_string::CaseInsensitiveString;
-use futures::future::{join_all, BoxFuture, FutureExt};
+use futures::future::join_all;
 use futures::stream::StreamExt;
 use std::collections::{HashMap, HashSet};
 use std::time::UNIX_EPOCH;
