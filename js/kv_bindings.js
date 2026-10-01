@@ -325,9 +325,14 @@ async function kv_get_text(key) {
 // Both Upstash Redis and Netlify Blobs can handle binary data or JSON directly
 // We'll trust the adapter to handle Uint8Array/JSON values appropriately
 async function kv_set(key, value /* Uint8Array from Rust */) {
+  // wasm-bindgen passes `&[u8]` as a view into wasm linear memory, valid only
+  // synchronously: memory growth during an await detaches it, and Rust may
+  // reuse the bytes once this call returns. Copy before the first await.
+  // (`new Uint8Array(view)` always copies; Buffer#slice would not.)
+  const bytes = new Uint8Array(value)
   try {
     const kvClient = await getKv()
-    await kvClient.set(key, value)
+    await kvClient.set(key, bytes)
   } catch (error) {
     console.error(`KV set error for ${key}:`, error)
     throw new Error(`Failed to set key ${key}: ${error.message}`)
