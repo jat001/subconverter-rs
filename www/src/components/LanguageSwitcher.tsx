@@ -3,7 +3,7 @@
 import { startTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { locales } from '@/i18n/request';
+import { locales } from '@/i18n/config';
 
 export default function LanguageSwitcher() {
     const router = useRouter();
