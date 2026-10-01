@@ -23,6 +23,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+          components: rustfmt
+
+      # Run `cargo fmt` locally to fix
+      - name: Check formatting
+        run: cargo fmt --check
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
