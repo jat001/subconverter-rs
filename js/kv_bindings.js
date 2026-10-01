@@ -428,8 +428,12 @@ async function kv_get_text(key) {
 // We'll trust the adapter to handle Uint8Array/JSON values appropriately
 async function kv_set(key, value /* Uint8Array from Rust */) {
   try {
+    // wasm-bindgen passes &[u8] as a view into wasm memory: it is detached if
+    // the memory grows during an await, and Rust reuses the memory once this
+    // call resolves. Copy it before the first await.
+    const bytes = value.slice()
     const kvClient = await getKv()
-    await kvClient.set(key, value)
+    await kvClient.set(key, bytes)
   } catch (error) {
     console.error(`KV set error for ${key}:`, error)
     throw new Error(`Failed to set key ${key}: ${error.message}`)

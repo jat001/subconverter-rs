@@ -131,11 +131,30 @@ process.env.KV_REST_API_TOKEN = 'fake-token'
 
 let kv
 
+// Fresh module state, so getKv() builds a new client
+function loadBindings() {
+  delete require.cache[BINDINGS_PATH]
+  return require(BINDINGS_PATH)
+}
+
+// Bindings backed by the in-memory fallback (no Upstash environment)
+async function loadInMemoryBindings() {
+  const { KV_REST_API_URL, KV_REST_API_TOKEN } = process.env
+  delete process.env.KV_REST_API_URL
+  delete process.env.KV_REST_API_TOKEN
+  try {
+    const bindings = loadBindings()
+    await bindings.getKv()
+    return bindings
+  } finally {
+    process.env.KV_REST_API_URL = KV_REST_API_URL
+    process.env.KV_REST_API_TOKEN = KV_REST_API_TOKEN
+  }
+}
+
 beforeEach(() => {
   server.clear()
-  // Fresh module state, so getKv() builds a new client each test
-  delete require.cache[BINDINGS_PATH]
-  kv = require(BINDINGS_PATH)
+  kv = loadBindings()
 })
 
 // Writes key the way the adapter did before values were encoded: through a
@@ -235,3 +254,33 @@ test('exists, list and del work on prefixed keys', async () => {
   assert.equal(await kv.kv_exists('dir/a'), false)
   assert.equal(await kv.kv_get('dir/a'), undefined)
 })
+
+// wasm-bindgen passes &[u8] to JS imports as a view into wasm memory
+// (memory.subarray): the view is detached if the memory grows, and Rust frees
+// or reuses the memory once the call resolves.
+for (const backend of ['upstash', 'in-memory']) {
+  const load = backend === 'upstash' ? loadBindings : loadInMemoryBindings
+
+  test(`kv_set keeps the bytes when wasm memory grows during the call (${backend})`, async () => {
+    const bindings = await load()
+    const memory = new WebAssembly.Memory({ initial: 1 })
+    const view = new Uint8Array(memory.buffer, 16, 4)
+    view.set([1, 2, 3, 4])
+
+    const pending = bindings.kv_set('grow', view)
+    memory.grow(1) // detaches view's buffer
+    await pending
+
+    assert.deepEqual(await bindings.kv_get('grow'), Uint8Array.of(1, 2, 3, 4))
+  })
+
+  test(`kv_set keeps the bytes when the caller's memory is reused afterwards (${backend})`, async () => {
+    const bindings = await load()
+    const memory = Uint8Array.of(1, 2, 3, 4)
+
+    await bindings.kv_set('reuse', memory)
+    memory.fill(0)
+
+    assert.deepEqual(await bindings.kv_get('reuse'), Uint8Array.of(1, 2, 3, 4))
+  })
+}
