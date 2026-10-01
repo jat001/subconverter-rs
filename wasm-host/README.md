@@ -34,6 +34,17 @@ The backend is picked on first use; the first one that is configured wins.
 
 Keys are stored under a `subconverter-data-v1/` prefix (Upstash, Workers KV), or in a `subconverter-data-v1` store (Netlify Blobs), so the storage can be shared with other data.
 
+`kv_set` copies its bytes before the first `await`: wasm-bindgen passes `&[u8]` as a view into WASM memory, which is detached if the memory grows and reused by Rust once the call resolves.
+
+### Upstash value format
+
+`@upstash/redis` only stores strings: it `JSON.stringify`s anything else (a `Uint8Array` becomes `{"0":1,...}`) and by default `JSON.parse`s replies (`"123"` comes back as `123`). The client is therefore created with `automaticDeserialization: false`, and the adapter stores every value as a string:
+
+- bytes as `subconverter:base64:` followed by base64;
+- text as-is, or with `subconverter:text:` in front if it starts with one of these markers.
+
+Values written before this format stay readable without a migration: text was stored as-is, and bytes as the JSON form of a `Uint8Array`, which `kv_get` still decodes.
+
 ### Cloudflare Workers KV
 
 ```jsonc

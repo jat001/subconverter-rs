@@ -23,7 +23,8 @@ const WORKERS_KV_BINDING = 'KV'
 export interface KvAdapter {
   get(key: string): Promise<unknown>
   getText(key: string): Promise<string | undefined>
-  set(key: string, value: Uint8Array): Promise<void>
+  /** `value` is a copy owned by the adapter (kv_set makes it), so it may be kept as-is */
+  set(key: string, value: Uint8Array<ArrayBuffer>): Promise<void>
   setText(key: string, value: string): Promise<void>
   exists(key: string): Promise<boolean>
   del(key: string): Promise<void>
@@ -99,9 +100,8 @@ function createMemoryAdapter(): KvAdapter {
       const value = localStorageMap.get(key)
       return typeof value === 'string' ? value : value && textDecoder.decode(value)
     },
-    // Copy: bytes from Rust may be a view into WASM memory that is reused after the call
     set: async (key, value) => {
-      localStorageMap.set(key, value.slice())
+      localStorageMap.set(key, value)
     },
     setText: async (key, value) => {
       localStorageMap.set(key, textEncoder.encode(value))
@@ -125,25 +125,114 @@ function upstashCredentials(): { url: string; token: string } | null {
   return url && token ? { url, token } : null
 }
 
+// Upstash value encoding. @upstash/redis JSON.stringify's non-string values on write (a Uint8Array
+// becomes '{"0":1,"1":2,...}'), JSON.parse's replies by default ("123" -> 123, "{...}" -> object)
+// and UTF-8 decodes every reply. So the client is created with automaticDeserialization: false and
+// every value is stored as a string:
+// - bytes as UPSTASH_BYTES_MARKER + base64;
+// - text as-is, or with UPSTASH_TEXT_MARKER in front if it starts with a marker.
+// Values written before this encoding stay readable without a migration: text was stored as-is,
+// and bytes as the JSON of a Uint8Array (decodeLegacyBytes).
+const UPSTASH_BYTES_MARKER = 'subconverter:base64:'
+const UPSTASH_TEXT_MARKER = 'subconverter:text:'
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  // Chunked so String.fromCharCode doesn't exceed the argument limit
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  }
+  return btoa(binary)
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes
+}
+
+// The bytes of a value stored as JSON.stringify(Uint8Array), or undefined if raw is not in that form
+function decodeLegacyBytes(raw: string): Uint8Array | undefined {
+  if (!raw.startsWith('{')) {
+    return undefined
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return undefined
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return undefined
+  }
+  const values = parsed as Record<string, unknown>
+  const length = Object.keys(values).length
+  const bytes = new Uint8Array(length)
+  for (let i = 0; i < length; i++) {
+    const byte = values[i]
+    if (!Number.isInteger(byte) || (byte as number) < 0 || (byte as number) > 255) {
+      return undefined
+    }
+    bytes[i] = byte as number
+  }
+  return bytes
+}
+
+function encodeUpstashText(text: string): string {
+  return text.startsWith(UPSTASH_BYTES_MARKER) || text.startsWith(UPSTASH_TEXT_MARKER)
+    ? UPSTASH_TEXT_MARKER + text
+    : text
+}
+
+function decodeUpstashBytes(raw: string): Uint8Array {
+  if (raw.startsWith(UPSTASH_BYTES_MARKER)) {
+    return base64ToBytes(raw.slice(UPSTASH_BYTES_MARKER.length))
+  }
+  if (raw.startsWith(UPSTASH_TEXT_MARKER)) {
+    return textEncoder.encode(raw.slice(UPSTASH_TEXT_MARKER.length))
+  }
+  return decodeLegacyBytes(raw) ?? textEncoder.encode(raw)
+}
+
+function decodeUpstashText(raw: string): string {
+  if (raw.startsWith(UPSTASH_BYTES_MARKER)) {
+    return textDecoder.decode(base64ToBytes(raw.slice(UPSTASH_BYTES_MARKER.length)))
+  }
+  if (raw.startsWith(UPSTASH_TEXT_MARKER)) {
+    return raw.slice(UPSTASH_TEXT_MARKER.length)
+  }
+  return raw
+}
+
 async function createUpstashAdapter(url: string, token: string): Promise<KvAdapter> {
   const { Redis } = await import('@upstash/redis')
-  const redis = new Redis({ url, token })
+  // Values are encoded by the adapter (see UPSTASH_BYTES_MARKER)
+  const redis = new Redis({ url, token, automaticDeserialization: false })
   const fullKey = (key: string) => `${STORAGE_PREFIX}/${key}`
   const stripPrefix = (key: string) =>
     key.startsWith(STORAGE_PREFIX + '/') ? key.substring(STORAGE_PREFIX.length + 1) : key
+  const getRaw = async (key: string) => {
+    const raw = await redis.get<string>(fullKey(key))
+    return raw === null || raw === undefined ? undefined : String(raw)
+  }
 
   return {
-    get: (key) => redis.get(fullKey(key)),
-    // Upstash may return a non-string for values stored through its REST API
+    get: async (key) => {
+      const raw = await getRaw(key)
+      return raw === undefined ? null : decodeUpstashBytes(raw)
+    },
     getText: async (key) => {
-      const value = await redis.get(fullKey(key))
-      return typeof value === 'string' ? value : undefined
+      const raw = await getRaw(key)
+      return raw === undefined ? undefined : decodeUpstashText(raw)
     },
     set: async (key, value) => {
-      await redis.set(fullKey(key), value.slice())
+      await redis.set(fullKey(key), UPSTASH_BYTES_MARKER + bytesToBase64(value))
     },
     setText: async (key, value) => {
-      await redis.set(fullKey(key), value)
+      await redis.set(fullKey(key), encodeUpstashText(value))
     },
     exists: async (key) => (await redis.exists(fullKey(key))) > 0,
     del: async (key) => {
@@ -207,9 +296,8 @@ function createWorkersKvAdapter(namespace: KvNamespace): KvAdapter {
     },
     getText: async (key) =>
       (await namespace.get(fullKey(key), { type: 'text' })) ?? undefined,
-    // Copy: bytes from Rust may be a view into WASM memory that changes before the write completes
     set: async (key, value) => {
-      await namespace.put(fullKey(key), value.slice())
+      await namespace.put(fullKey(key), value)
     },
     setText: async (key, value) => {
       await namespace.put(fullKey(key), value)
@@ -270,9 +358,9 @@ async function createNetlifyAdapter(): Promise<KvAdapter> {
       }
     },
     getText: async (key) => (await store.get(key, { type: 'text' })) ?? undefined,
-    // A copy with its own buffer, which also detaches it from WASM memory
+    // The copy from kv_set owns its whole buffer, so the buffer holds exactly these bytes
     set: async (key, value) => {
-      await store.set(key, value.slice().buffer)
+      await store.set(key, value.buffer)
     },
     setText: async (key, value) => {
       await store.set(key, value)
@@ -361,8 +449,12 @@ export async function kv_get_text(key: string): Promise<string | undefined> {
 }
 
 export async function kv_set(key: string, value: Uint8Array): Promise<void> {
+  // wasm-bindgen passes &[u8] as a view into WASM memory, valid only synchronously: memory growth
+  // during an await detaches it, and Rust reuses the memory once this call resolves. Copy before
+  // the first await. (`new Uint8Array(view)` always copies; Buffer#slice would return a view.)
+  const bytes = new Uint8Array(value)
   try {
-    await (await getKv()).set(key, value)
+    await (await getKv()).set(key, bytes)
   } catch (error) {
     console.error(`KV set error for ${key}:`, error)
     throw new Error(`Failed to set key ${key}: ${errorMessage(error)}`)
