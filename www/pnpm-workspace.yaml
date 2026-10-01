@@ -1,4 +1,6 @@
 dangerouslyAllowAllBuilds: true
+# Also refuse dependencies whose engines field excludes the current Node.js (the project's own engines is always enforced)
+engineStrict: true
 minimumReleaseAge: 0
 overrides:
   '@jat/subconverter-wasm': file:../pkg
