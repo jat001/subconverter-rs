@@ -60,6 +60,24 @@ function getenv(name, defaultValue = '') {
   return value
 }
 
+// Upstash Redis stores strings, and the SDK JSON-stringifies anything else
+// (a Uint8Array becomes '{"0":104,"1":105}'), so store bytes as base64.
+function encodeUpstashBytes(bytes) {
+  return Buffer.from(bytes).toString('base64')
+}
+
+function decodeUpstashBytes(stored) {
+  if (stored === null || stored === undefined) {
+    return null
+  }
+  // Values written before base64 encoding hold the SDK's JSON form of the
+  // Uint8Array. '{' never appears in base64.
+  if (stored.startsWith('{')) {
+    return Uint8Array.from(Object.values(JSON.parse(stored)))
+  }
+  return new Uint8Array(Buffer.from(stored, 'base64'))
+}
+
 async function getKv() {
   if (!kv) {
     try {
@@ -73,6 +91,9 @@ async function getKv() {
         const baseRedis = new Redis({
           url: process.env.KV_REST_API_URL,
           token: process.env.KV_REST_API_TOKEN,
+          // Return values as stored. The default JSON-parses replies, turning
+          // JSON text (directory metadata) into objects and "123" into 123.
+          automaticDeserialization: false,
         })
         console.log(
           'Using Upstash Redis for storage (version prefix: ',
@@ -83,9 +104,15 @@ async function getKv() {
         // Create adapter with version prefixing
         kv = {
           _baseRedis: baseRedis,
-          get: (key) => baseRedis.get(`${UPSTASH_REDIS_PREFIX}/${key}`),
+          get: async (key) =>
+            decodeUpstashBytes(
+              await baseRedis.get(`${UPSTASH_REDIS_PREFIX}/${key}`),
+            ),
           set: (key, value) =>
-            baseRedis.set(`${UPSTASH_REDIS_PREFIX}/${key}`, value),
+            baseRedis.set(
+              `${UPSTASH_REDIS_PREFIX}/${key}`,
+              encodeUpstashBytes(value),
+            ),
           exists: (key) => baseRedis.exists(`${UPSTASH_REDIS_PREFIX}/${key}`),
           del: (key) => baseRedis.del(`${UPSTASH_REDIS_PREFIX}/${key}`),
           scan: async (cursor, options = {}) => {
@@ -246,7 +273,7 @@ async function getKv() {
 
 // Helper to handle potential null from kv.get
 // Both Upstash Redis and Netlify Blobs may store raw bytes differently
-// Upstash Redis may return a string for values stored through its REST API.
+// The Upstash adapter decodes its base64 strings back to Uint8Array.
 // For Netlify Blobs, we request arrayBuffer type and convert to Uint8Array
 async function kv_get(key) {
   try {
@@ -322,8 +349,8 @@ async function kv_get_text(key) {
   }
 }
 
-// Both Upstash Redis and Netlify Blobs can handle binary data or JSON directly
-// We'll trust the adapter to handle Uint8Array/JSON values appropriately
+// Adapters take a Uint8Array; the Upstash adapter stores it base64-encoded,
+// so read these values back with kv_get, not kv_get_text.
 async function kv_set(key, value /* Uint8Array from Rust */) {
   // wasm-bindgen passes `&[u8]` as a view into wasm linear memory, valid only
   // synchronously: memory growth during an await detaches it, and Rust may
@@ -390,7 +417,7 @@ async function kv_list(prefix) {
     }
 
     // Otherwise, fall back to using scan with pattern matching
-    let cursor
+    let cursor = '0' // SCAN needs a cursor; iteration starts at 0
     const keys = []
     let scanResult
 
