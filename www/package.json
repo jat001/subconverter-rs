@@ -7,7 +7,7 @@
     "rebuild:wasm:dev": "cd .. && ./scripts/build-wasm.sh && cd www && pnpm dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "deploy:netlify": "netlify deploy"
   },
   "dependencies": {
@@ -24,7 +24,6 @@
     "subconverter-wasm": "^0.2.36"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.7",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.19.0",
     "@types/react": "^19.3.0",
