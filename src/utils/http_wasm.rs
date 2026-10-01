@@ -9,7 +9,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
 // Import our JavaScript binding functions
-#[wasm_bindgen(module = "/js/kv_bindings.js")]
+#[wasm_bindgen(module = "/wasm-host/dist/kv_bindings.js")]
 extern "C" {
     #[wasm_bindgen(js_name = "wasm_fetch_with_request")]
     fn js_wasm_fetch_with_request(url: &str, options: &JsValue) -> js_sys::Promise;

@@ -50,6 +50,80 @@ function Get-GitStatusClean {
     return [string]::IsNullOrEmpty($status)
 }
 
+# Write text as UTF-8 without BOM, LF line endings (matches wasm-pack / jq output)
+function Write-JsonFile {
+    param([string]$Path, [string[]]$Lines)
+    $fullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    [System.IO.File]::WriteAllText($fullPath, ($Lines -join "`n") + "`n")
+}
+
+# Compare two JSON files semantically (key order and formatting ignored)
+function Test-JsonEqual {
+    param([string]$PathA, [string]$PathB)
+    $a = (jq -S . $PathA) -join "`n"
+    $b = (jq -S . $PathB) -join "`n"
+    return $a -eq $b
+}
+
+# wasm-pack regenerates pkg/package.json on every build. Stash the current one first so it can be kept
+# as-is (content and mtime) when the patched result is identical, avoiding needless reinstalls in www.
+$PkgJsonBackup = 'target/pkg-package.json.bak'
+# Runtime dependencies of the wasm-host bindings (shipped in pkg/snippets/) are declared in wasm-host/package.json
+$HostPkgJson = 'wasm-host/package.json'
+$PkgJsonFilter = '.name = "subconverter-wasm" | .version = $ver | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f)) | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))'
+
+# Compile the TypeScript bindings (wasm-host/src -> wasm-host/dist) that wasm-bindgen embeds
+function Build-WasmHost {
+    Write-Host "Building wasm-host bindings..."
+    pnpm --dir wasm-host install --frozen-lockfile
+    if ($LASTEXITCODE -ne 0) { throw "pnpm install in wasm-host failed" }
+    pnpm --dir wasm-host run build
+    if ($LASTEXITCODE -ne 0) { throw "wasm-host build failed" }
+}
+
+function Backup-PkgJson {
+    if (Test-Path $PkgJsonBackup) { Remove-Item $PkgJsonBackup -Force }
+    if (Test-Path 'pkg/package.json') {
+        New-Item -ItemType Directory -Path 'target' -Force | Out-Null
+        Copy-Item 'pkg/package.json' $PkgJsonBackup
+    }
+}
+
+# Apply our changes on top of the wasm-pack output, only replacing the previous file when something differs
+function Update-PkgJson {
+    param([string]$PkgVersion)
+    $path = 'pkg/package.json'
+    $tmp = "$path.tmp"
+    $lines = jq --arg ver $PkgVersion --slurpfile host $HostPkgJson $PkgJsonFilter $path
+    if ($LASTEXITCODE -ne 0) { throw "jq failed to update $path" }
+    Write-JsonFile $tmp $lines
+
+    if ((Test-Path $PkgJsonBackup) -and (Test-JsonEqual $PkgJsonBackup $tmp)) {
+        Move-Item $PkgJsonBackup $path -Force
+        Remove-Item $tmp -Force
+        Write-Host "pkg/package.json unchanged, kept existing file"
+    }
+    else {
+        Move-Item $tmp $path -Force
+        if (Test-Path $PkgJsonBackup) { Remove-Item $PkgJsonBackup -Force }
+        Write-Host "pkg/package.json updated"
+    }
+}
+
+# Cloudflare Workers build, published as `subconverter-wasm/workers`: the same crate through
+# `--target web`, plus the entry in wasm-host/workers/ that instantiates the precompiled module
+# (Workers cannot compile WebAssembly from bytes at runtime).
+function Build-WorkersPkg {
+    param([string]$Mode) # --release or --dev
+    Write-Host "Building Cloudflare Workers wasm package ($Mode)..."
+    if (Test-Path 'pkg/workers') { Remove-Item 'pkg/workers' -Recurse -Force }
+    wasm-pack build $Mode --target web --out-dir pkg/workers --no-pack
+    if ($LASTEXITCODE -ne 0) { throw "wasm-pack build for Workers failed" }
+    # wasm-pack writes a `*` .gitignore, which would make npm drop the whole directory when publishing
+    if (Test-Path 'pkg/workers/.gitignore') { Remove-Item 'pkg/workers/.gitignore' -Force }
+    Copy-Item 'wasm-host/workers/*' 'pkg/workers/' -Force
+}
+
 # --- Check Required Tools ---
 
 if (-not (Test-CommandExists 'wasm-pack')) {
@@ -103,11 +177,19 @@ if ($bumpBeta) {
     (Get-Content 'Cargo.toml') -replace "version = `"$currentVersion`"", "version = `"$Version`"" | Set-Content 'Cargo.toml'
 
     # Update subconverter-wasm dependency version in www/package.json
+    # Only touches entries that already exist, and leaves the file alone if nothing changes
     if (Test-Path 'www/package.json') {
-        Write-Host "Updating subconverter-wasm dependency to $Version in www/package.json"
-        $pkgJson = Get-Content 'www/package.json' -Raw
-        $pkgJson = $pkgJson | jq --arg new_version "$Version" '(.dependencies? | ."subconverter-wasm") |= $new_version | (.devDependencies? | ."subconverter-wasm") |= $new_version'
-        $pkgJson | Set-Content 'www/package.json'
+        $wwwFilter = '(if .dependencies["subconverter-wasm"] then .dependencies["subconverter-wasm"] = $v else . end) | (if .devDependencies["subconverter-wasm"] then .devDependencies["subconverter-wasm"] = $v else . end)'
+        $lines = jq --arg v $Version $wwwFilter 'www/package.json'
+        if ($LASTEXITCODE -ne 0) { throw "jq failed to update www/package.json" }
+        Write-JsonFile 'www/package.json.tmp' $lines
+        if (Test-JsonEqual 'www/package.json' 'www/package.json.tmp') {
+            Remove-Item 'www/package.json.tmp' -Force
+        }
+        else {
+            Write-Host "Updating subconverter-wasm dependency to $Version in www/package.json"
+            Move-Item 'www/package.json.tmp' 'www/package.json' -Force
+        }
     }
 
     Write-Host "Running cargo check to update Cargo.lock"
@@ -117,21 +199,18 @@ if ($bumpBeta) {
     if (Test-Path 'pkg') {
         Remove-Item 'pkg' -Recurse -Force
     }
+    Build-WasmHost
+    Backup-PkgJson
 
     # Build WASM locally (Release mode)
     Write-Host "Building wasm package locally in release mode..."
     wasm-pack build --release --target nodejs
+    Build-WorkersPkg '--release'
     Write-Host "WASM beta build complete! Output is in the 'pkg' directory."
 
     # Update package.json in pkg
     Write-Host "Updating pkg/package.json..."
-    $pkgJsonPath = 'pkg/package.json'
-    $json = Get-Content $pkgJsonPath -Raw | jq '.files += ["snippets/"]'
-    $json = $json | jq '.name = "subconverter-wasm"'
-    $json = $json | jq '.dependencies = {"@upstash/redis": "^1.38.4"}'
-    $json = $json | jq '.dependencies["@netlify/blobs"] = "^11.0.3"'
-    $json = $json | jq --arg ver "$Version" '.version = $ver'
-    $json | Set-Content $pkgJsonPath
+    Update-PkgJson $Version
 
     # Publish beta version to npm
     Write-Host "Publishing beta version $Version to npm..."
@@ -285,6 +364,10 @@ if ($prepareRelease) {
 }
 
 # Build the wasm package
+Build-WasmHost
+Backup-PkgJson
+# wasm-pack does not clean pkg/; drop snippets left over from earlier builds so they are not published
+if (Test-Path 'pkg/snippets') { Remove-Item 'pkg/snippets' -Recurse -Force }
 if ($releaseMode) {
     Write-Host "Building wasm package in release mode..."
 
@@ -308,24 +391,20 @@ if ($releaseMode) {
     }
 
     wasm-pack build --release --target nodejs
+    Build-WorkersPkg '--release'
     Write-Host "WASM release build complete! Output is in the 'pkg' directory."
 }
 else {
     Write-Host "Building wasm package in development mode..."
     wasm-pack build --dev --target nodejs
+    Build-WorkersPkg '--dev'
     Write-Host "WASM development build complete! Output is in the 'pkg' directory."
 }
 
 # Update package.json in pkg
 Write-Host "Updating package.json..."
 $pkgVersion = if ($Version) { $Version } else { $currentVersion }
-$pkgJsonPath = 'pkg/package.json'
-$json = Get-Content $pkgJsonPath -Raw | jq '.files += ["snippets/"]'
-$json = $json | jq '.name = "subconverter-wasm"'
-$json = $json | jq '.dependencies = {"@upstash/redis": "^1.38.4"}'
-$json = $json | jq '.dependencies["@netlify/blobs"] = "^11.0.3"'
-$json = $json | jq --arg ver "$pkgVersion" '.version = $ver'
-$json | Set-Content $pkgJsonPath
+Update-PkgJson $pkgVersion
 
 # Install dependencies in pkg
 Push-Location 'pkg'

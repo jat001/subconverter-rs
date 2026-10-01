@@ -8,7 +8,7 @@ Rust rewrite of the C++ subconverter: converts proxy subscriptions between forma
 
 1. **Native HTTP server / CLI** — binary `subconverter` (actix-web, port 25500). The binary requires the `web-api` feature; plain `cargo build` compiles only the library.
 2. **Rust library** — `libsubconverter` (rlib).
-3. **WASM package** — `subconverter-wasm` npm package (cdylib via wasm-pack, `--target nodejs`), consumed by the Next.js frontend in `www/` and deployed as Netlify serverless functions.
+3. **WASM package** — `subconverter-wasm` npm package (cdylib via wasm-pack, `--target nodejs`), consumed by the Next.js frontend in `www/` and deployed as Netlify serverless functions. The same package ships a Cloudflare Workers build at `subconverter-wasm/workers` (`--target web` into `pkg/workers/`, entry files in `wasm-host/workers/`), because Workers cannot compile WASM from bytes at runtime.
 
 ## Commands
 
@@ -23,7 +23,7 @@ cargo run --features web-api -- --url "/sub?target=clash&url=..." -o output.yaml
 # Tests (inline #[cfg(test)] modules; no tests/ directory)
 cargo test
 cargo test some_test_name                    # single test by name substring
-cd js && node --test                         # JS KV binding tests (node:test, no deps)
+cd wasm-host && pnpm test                    # TS host bindings: build src/ -> dist/, run node:test suite
 
 # Type-check the wasm side (rustup target add wasm32-unknown-unknown first)
 cargo check --target wasm32-unknown-unknown
@@ -56,7 +56,7 @@ The conversion pipeline is **parse → transform → generate**, orchestrated in
   - `golden_tests.rs` + `testdata/*.golden` — golden output tests: a 12-protocol fixture rendered through every emitter, byte-compared against checked-in files. Any output change shows up as a golden diff; update intentionally with `cargo test --lib regenerate_goldens -- --ignored`.
 - `src/web_handlers/` (`web-api` feature) — actix-web endpoints (`/sub`, `/surge2clash`, …). `main.rs` starts the server; CLI direct mode routes a synthetic request through the same handlers via actix's test service.
 - `src/api/` — WASM-facing `#[wasm_bindgen]` exports (sub, admin, rules, short_urls; mostly `cfg(target_arch = "wasm32")`).
-- `src/vfs/` (wasm only) — virtual file system over Upstash Redis (Vercel KV) / Cloudflare Workers KV / Netlify Blobs through JS bindings in `js/kv_bindings.js` (npm deps declared in `js/package.json`, merged into the published package by the build scripts), with lazy loading of missing files from GitHub. In the WASM build, "file" reads for configs/rules go through this.
+- `src/vfs/` (wasm only) — virtual file system over Upstash Redis (Vercel KV) / Cloudflare Workers KV / Netlify Blobs through host bindings in `wasm-host/src/kv_bindings.ts` (TypeScript, compiled to `wasm-host/dist/kv_bindings.js`, which the `#[wasm_bindgen(module = ...)]` imports reference; dist is committed because wasm-bindgen reads it at compile time, so rebuild it with `pnpm build` after editing the source; npm deps declared in `wasm-host/package.json` are merged into the published package by the build scripts), with lazy loading of missing files from GitHub. In the WASM build, "file" reads for configs/rules go through this.
 - `src/settings/` — global `Settings` singleton (`Settings::current()`); loads `pref.toml` → `pref.yml` → `pref.ini` in that priority order. `external/` handles the `&config=` external configs.
 - `src/template/` — minijinja-based template rendering for base configs.
 - `base/` — runtime data, not code: example prefs, base config templates, rules, snippets. The server reads these at runtime.

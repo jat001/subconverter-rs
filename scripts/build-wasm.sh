@@ -41,6 +41,62 @@ if ! command -v pnpm &>/dev/null; then
   exit 1
 fi
 
+# wasm-pack regenerates pkg/package.json on every build. Stash the current one first so it can be kept
+# as-is (content and mtime) when the patched result is identical, avoiding needless reinstalls in www.
+PKG_JSON_BACKUP=target/pkg-package.json.bak
+# Runtime dependencies of the wasm-host bindings (shipped in pkg/snippets/) are declared in wasm-host/package.json
+HOST_PKG_JSON=wasm-host/package.json
+
+# Compile the TypeScript bindings (wasm-host/src -> wasm-host/dist) that wasm-bindgen embeds
+build_wasm_host() {
+  echo "Building wasm-host bindings..."
+  pnpm --dir wasm-host install --frozen-lockfile
+  pnpm --dir wasm-host run build
+}
+
+backup_pkg_json() {
+  rm -f "$PKG_JSON_BACKUP"
+  if [ -f pkg/package.json ]; then
+    mkdir -p target
+    cp -p pkg/package.json "$PKG_JSON_BACKUP"
+  fi
+}
+
+# Apply our changes on top of the wasm-pack output, only replacing the previous file when something differs
+update_pkg_json() {
+  local pkg_version="$1"
+  local tmp=pkg/package.json.tmp
+  jq --arg ver "$pkg_version" --slurpfile host "$HOST_PKG_JSON" '
+    .name = "subconverter-wasm"
+    | .version = $ver
+    | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f))
+    | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))
+  ' pkg/package.json >"$tmp"
+
+  if [ -f "$PKG_JSON_BACKUP" ] && [ "$(jq -S . "$PKG_JSON_BACKUP")" = "$(jq -S . "$tmp")" ]; then
+    mv "$PKG_JSON_BACKUP" pkg/package.json
+    rm -f "$tmp"
+    echo "pkg/package.json unchanged, kept existing file"
+  else
+    mv "$tmp" pkg/package.json
+    rm -f "$PKG_JSON_BACKUP"
+    echo "pkg/package.json updated"
+  fi
+}
+
+# Cloudflare Workers build, published as `subconverter-wasm/workers`: the same crate through
+# `--target web`, plus the entry in wasm-host/workers/ that instantiates the precompiled module
+# (Workers cannot compile WebAssembly from bytes at runtime).
+build_workers_pkg() {
+  local mode="$1" # --release or --dev
+  echo "Building Cloudflare Workers wasm package ($mode)..."
+  rm -rf pkg/workers
+  wasm-pack build "$mode" --target web --out-dir pkg/workers --no-pack
+  # wasm-pack writes a `*` .gitignore, which would make npm drop the whole directory when publishing
+  rm -f pkg/workers/.gitignore
+  cp wasm-host/workers/* pkg/workers/
+}
+
 # Parse arguments
 RELEASE_MODE=false
 VERSION=""
@@ -113,9 +169,18 @@ if [ "$BUMP_BETA" = true ]; then
   sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$VERSION\"/" Cargo.toml
 
   # Update subconverter-wasm dependency version in www/package.json if it exists
+  # Only touches entries that already exist, and leaves the file alone if nothing changes
   if [ -f "www/package.json" ]; then
-    echo "Updating subconverter-wasm dependency to $VERSION in www/package.json"
-    jq --arg new_version "$VERSION" '(.dependencies? | ."subconverter-wasm") |= $new_version | (.devDependencies? | ."subconverter-wasm") |= $new_version' www/package.json >www/package.json.tmp && mv www/package.json.tmp www/package.json
+    jq --arg v "$VERSION" '
+      (if .dependencies["subconverter-wasm"] then .dependencies["subconverter-wasm"] = $v else . end)
+      | (if .devDependencies["subconverter-wasm"] then .devDependencies["subconverter-wasm"] = $v else . end)
+    ' www/package.json >www/package.json.tmp
+    if [ "$(jq -S . www/package.json)" = "$(jq -S . www/package.json.tmp)" ]; then
+      rm -f www/package.json.tmp
+    else
+      echo "Updating subconverter-wasm dependency to $VERSION in www/package.json"
+      mv www/package.json.tmp www/package.json
+    fi
   fi
 
   echo "Running cargo check to update Cargo.lock"
@@ -123,19 +188,18 @@ if [ "$BUMP_BETA" = true ]; then
 
   # Clean pkg directory
   rm -rf pkg
+  build_wasm_host
+  backup_pkg_json
 
   # Build WASM locally (Release mode)
   echo "Building wasm package locally in release mode..."
   wasm-pack build --release --target nodejs
+  build_workers_pkg --release
   echo "WASM beta build complete! Output is in the 'pkg' directory."
 
   # Update package.json in pkg
   echo "Updating pkg/package.json..."
-  jq '.files += ["snippets/"]' pkg/package.json |
-    jq '.name = "subconverter-wasm"' |
-    jq '.dependencies["@upstash/redis"] = "^1.38.4"' |
-    jq '.dependencies["@netlify/blobs"] = "^11.0.3"' |
-    jq ".version = \"$VERSION\"" >tmp.json && mv tmp.json pkg/package.json
+  update_pkg_json "$VERSION"
 
   # Publish beta version to npm
   echo "Publishing beta version $VERSION to npm..."
@@ -290,6 +354,10 @@ if [ "$PREPARE_RELEASE" = true ]; then
 fi
 
 # Build the wasm package
+build_wasm_host
+backup_pkg_json
+# wasm-pack does not clean pkg/; drop snippets left over from earlier builds so they are not published
+rm -rf pkg/snippets
 if [ "$RELEASE_MODE" = true ]; then
   echo "Building wasm package in release mode..."
 
@@ -315,10 +383,12 @@ if [ "$RELEASE_MODE" = true ]; then
   fi
 
   wasm-pack build --release --target nodejs
+  build_workers_pkg --release
   echo "WASM release build complete! Output is in the 'pkg' directory."
 else
   echo "Building wasm package in development mode..."
   wasm-pack build --dev --target nodejs
+  build_workers_pkg --dev
   echo "WASM development build complete! Output is in the 'pkg' directory."
 fi
 
@@ -326,11 +396,7 @@ fi
 echo "Updating package.json..."
 # Use PKG_VERSION calculated earlier
 PKG_VERSION=${VERSION:-$CURRENT_VERSION}
-jq '.files += ["snippets/"]' pkg/package.json |
-  jq '.name = "subconverter-wasm"' |
-  jq '.dependencies["@upstash/redis"] = "^1.38.4"' |
-  jq '.dependencies["@netlify/blobs"] = "^11.0.3"' |
-  jq ".version = \"$PKG_VERSION\"" >tmp.json && mv tmp.json pkg/package.json
+update_pkg_json "$PKG_VERSION"
 
 # Install dependencies in pkg
 cd pkg

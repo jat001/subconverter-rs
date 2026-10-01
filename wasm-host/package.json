@@ -1,0 +1,28 @@
+{
+  "name": "subconverter-wasm-host",
+  "private": true,
+  "description": "Host-side code for the subconverter-rs WASM package: the bindings imported by the Rust code (dist/kv_bindings.js) and the Cloudflare Workers entry. The dependencies listed here are merged into pkg/package.json by scripts/build-wasm.sh and scripts/build-wasm.ps1.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc",
+    "test": "pnpm run build && node --test"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.39.0",
+    "@netlify/blobs": "^11.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "typescript": "^7.0.2"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": ">=12.0.0 <13.0.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
