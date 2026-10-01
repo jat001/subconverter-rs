@@ -353,8 +353,9 @@ async function kv_get_text(key) {
 // so read these values back with kv_get, not kv_get_text.
 async function kv_set(key, value /* Uint8Array from Rust */) {
   // wasm-bindgen passes `&[u8]` as a view into wasm linear memory, valid only
-  // synchronously: memory growth during an await detaches it, and Rust may
-  // reuse the bytes once this call returns. Copy before the first await.
+  // synchronously: memory growth during an await detaches it, and once the
+  // returned promise settles Rust may free and reuse the bytes, changing a
+  // view kept by an adapter. Copy before the first await.
   // (`new Uint8Array(view)` always copies; Buffer#slice would not.)
   const bytes = new Uint8Array(value)
   try {

@@ -147,12 +147,15 @@ describe('kv_set copies the wasm memory view before awaiting', () => {
         const view = wasmView(memory, 64, ORIGINAL)
 
         const pending = bindings.kv_set('mutated', view)
-        view.fill(0xff) // Rust reuses the memory before kv_set's await resumes
+        // Stricter than reality (Rust's borrow keeps these bytes intact until
+        // the promise settles), but only a synchronous copy passes it.
+        view.fill(0xff)
         await pending
 
         assert.deepEqual([...(await bindings.kv_get('mutated'))], ORIGINAL)
 
-        // The stored value must not alias wasm memory after the call either.
+        // Once the promise settles Rust may reuse the memory; the stored value
+        // must not alias it.
         new Uint8Array(memory.buffer).fill(0xee)
         assert.deepEqual([...(await bindings.kv_get('mutated'))], ORIGINAL)
       })
