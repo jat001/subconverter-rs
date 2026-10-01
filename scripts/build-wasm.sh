@@ -25,7 +25,7 @@ EOF
 
 # Check if wasm-pack is installed
 if ! command -v wasm-pack &>/dev/null; then
-  echo "wasm-pack is required. Install it with 'cargo install wasm-pack' (see https://github.com/drager/wasm-pack)."
+  echo "wasm-pack is required. Install it with 'cargo install wasm-pack' (see https://github.com/wasm-bindgen/wasm-pack)."
   exit 1
 fi
 

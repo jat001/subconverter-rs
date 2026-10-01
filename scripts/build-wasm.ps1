@@ -127,7 +127,7 @@ function Build-WorkersPkg {
 # --- Check Required Tools ---
 
 if (-not (Test-CommandExists 'wasm-pack')) {
-    Write-Error "wasm-pack is required. Install it with 'cargo install wasm-pack' (see https://github.com/drager/wasm-pack)."
+    Write-Error "wasm-pack is required. Install it with 'cargo install wasm-pack' (see https://github.com/wasm-bindgen/wasm-pack)."
     exit 1
 }
 
