@@ -6,7 +6,18 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   // Build output (flat config does not read .gitignore)
-  globalIgnores([".next/**", ".vercel/**", ".netlify/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    ".vercel/**",
+    ".netlify/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    // vinext (Cloudflare Workers) output and local state
+    "dist/**",
+    ".vinext/**",
+    ".wrangler/**",
+  ]),
   {
     // eslint-plugin-react's "detect" calls context.getFilename(), which ESLint 10 removed
     settings: { react: { version: "19" } },

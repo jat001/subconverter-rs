@@ -103,6 +103,13 @@ jobs:
         working-directory: www
         run: pnpm build
 
+      # Cloudflare Workers build via vinext; the dry run checks that wrangler can bundle the Worker
+      - name: Build for Cloudflare Workers
+        working-directory: www
+        run: |
+          pnpm run build:vinext
+          pnpm exec wrangler deploy --dry-run --config dist/server/wrangler.json
+
   wasm-host:
     name: wasm-host tests
     runs-on: ubuntu-latest

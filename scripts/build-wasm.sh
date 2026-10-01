@@ -10,6 +10,8 @@ Subconverter WASM Build & Release Script
 ---------------------------------------
 Usage Options:
   --release          Build in release mode
+  --optimize         Development flow (versions untouched, www reinstalled) with optimized release-profile WASM,
+                     e.g. before deploying www to Cloudflare Workers, whose size limit the dev build exceeds
   --prepare-release  Prepare a release: Update version, create temporary tag, and trigger GitHub Actions
   --bump-patch       Bump patch version number, commit change and prepare release (convenient for routine updates)
   --bump-beta        Bump version for beta/preview release on current branch (not main), build locally, and deploy www to Netlify preview
@@ -18,6 +20,7 @@ Usage Options:
 Examples:
   ./build-wasm.sh                      # Build in development mode
   ./build-wasm.sh --release            # Build in release mode
+  ./build-wasm.sh --optimize           # Optimized build for local use or a Workers deploy, no version changes
   ./build-wasm.sh --bump-patch         # Auto-bump patch version and prepare release
   ./build-wasm.sh --bump-beta          # Build beta version from current branch and deploy www preview
   ./build-wasm.sh --prepare-release --version 0.3.0  # Prepare specific version release
@@ -66,13 +69,7 @@ backup_pkg_json() {
 update_pkg_json() {
   local pkg_version="$1"
   local tmp=pkg/package.json.tmp
-  jq --arg ver "$pkg_version" --slurpfile host "$HOST_PKG_JSON" '
-    .name = "@jat/subconverter-wasm"
-    | .publishConfig = {"access": "public"}
-    | .version = $ver
-    | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f))
-    | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))
-  ' pkg/package.json >"$tmp"
+  jq --arg ver "$pkg_version" --slurpfile host "$HOST_PKG_JSON" -f scripts/pkg-package.jq pkg/package.json >"$tmp"
 
   if [ -f "$PKG_JSON_BACKUP" ] && [ "$(jq -S . "$PKG_JSON_BACKUP")" = "$(jq -S . "$tmp")" ]; then
     mv "$PKG_JSON_BACKUP" pkg/package.json
@@ -100,6 +97,8 @@ build_workers_pkg() {
 
 # Parse arguments
 RELEASE_MODE=false
+# wasm-pack profile for development builds; --optimize switches it to release
+DEV_PROFILE=--dev
 VERSION=""
 PREPARE_RELEASE=false
 BUMP_PATCH=false
@@ -109,6 +108,10 @@ while [[ $# -gt 0 ]]; do
   case $1 in
   --release)
     RELEASE_MODE=true
+    shift
+    ;;
+  --optimize)
+    DEV_PROFILE=--release
     shift
     ;;
   --prepare-release)
@@ -133,7 +136,7 @@ while [[ $# -gt 0 ]]; do
     ;;
   *)
     echo "Unknown option: $1"
-    echo "Usage: $0 [--release] [--prepare-release] [--bump-patch] [--bump-beta] [--version X.Y.Z]"
+    echo "Usage: $0 [--release] [--optimize] [--prepare-release] [--bump-patch] [--bump-beta] [--version X.Y.Z]"
     exit 1
     ;;
   esac
@@ -387,9 +390,9 @@ if [ "$RELEASE_MODE" = true ]; then
   build_workers_pkg --release
   echo "WASM release build complete! Output is in the 'pkg' directory."
 else
-  echo "Building wasm package in development mode..."
-  wasm-pack build --dev --target nodejs
-  build_workers_pkg --dev
+  echo "Building wasm package in development mode ($DEV_PROFILE)..."
+  wasm-pack build "$DEV_PROFILE" --target nodejs
+  build_workers_pkg "$DEV_PROFILE"
   echo "WASM development build complete! Output is in the 'pkg' directory."
 fi
 
@@ -408,17 +411,11 @@ cd ..
 if [ "$RELEASE_MODE" = false ]; then
   echo "Setting up development environment..."
 
-  # Check if www directory exists and copy files directly
   if [ -d "www" ]; then
-    echo "Copying WASM files to www project..."
-
-    # Create necessary directories
-    # mkdir -p www/node_modules/@jat/subconverter-wasm
-
-    # Copy all files from pkg to www/node_modules/@jat/subconverter-wasm
-    # cp -r pkg/* www/node_modules/@jat/subconverter-wasm/
-
-    echo "Successfully copied WASM files to www/node_modules/@jat/subconverter-wasm"
+    # www depends on file:../pkg (pnpm-workspace.yaml override), which pnpm copies into
+    # node_modules; reinstalling refreshes that copy with the new build
+    echo "Installing the new WASM package into www..."
+    pnpm --dir www install
     echo "Note: You'll need to run this script again after any changes to the WASM code"
   else
     echo "Warning: www directory not found, skipping copy to www project"

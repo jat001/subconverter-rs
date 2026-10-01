@@ -2,6 +2,7 @@
 #Requires -Version 5.1
 param(
     [switch]$Release,
+    [switch]$Optimize,
     [switch]$PrepareRelease,
     [switch]$BumpPatch,
     [switch]$BumpBeta,
@@ -19,6 +20,8 @@ Subconverter WASM Build & Release Script (PowerShell)
 -----------------------------------------------------
 Usage Options:
   -Release           Build in release mode
+  -Optimize          Development flow (versions untouched, www reinstalled) with optimized release-profile WASM,
+                     e.g. before deploying www to Cloudflare Workers, whose size limit the dev build exceeds
   -PrepareRelease    Prepare a release: Update version, create temporary tag, and trigger GitHub Actions
   -BumpPatch         Bump patch version number, commit change and prepare release
   -BumpBeta          Bump version for beta/preview release on current branch (not main), build locally, and deploy www to Netlify preview
@@ -27,6 +30,7 @@ Usage Options:
 Examples:
   .\build-wasm.ps1                      # Build in development mode
   .\build-wasm.ps1 -Release             # Build in release mode
+  .\build-wasm.ps1 -Optimize            # Optimized build for local use or a Workers deploy, no version changes
   .\build-wasm.ps1 -BumpPatch           # Auto-bump patch version and prepare release
   .\build-wasm.ps1 -BumpBeta            # Build beta version from current branch and deploy www preview
   .\build-wasm.ps1 -PrepareRelease -Version 0.3.0
@@ -70,7 +74,7 @@ function Test-JsonEqual {
 $PkgJsonBackup = 'target/pkg-package.json.bak'
 # Runtime dependencies of the wasm-host bindings (shipped in pkg/snippets/) are declared in wasm-host/package.json
 $HostPkgJson = 'wasm-host/package.json'
-$PkgJsonFilter = '.name = "@jat/subconverter-wasm" | .publishConfig = {"access": "public"} | .version = $ver | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f)) | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))'
+$PkgJsonFilterFile = 'scripts/pkg-package.jq'
 
 # Compile the TypeScript bindings (wasm-host/src -> wasm-host/dist) that wasm-bindgen embeds
 function Build-WasmHost {
@@ -94,7 +98,7 @@ function Update-PkgJson {
     param([string]$PkgVersion)
     $path = 'pkg/package.json'
     $tmp = "$path.tmp"
-    $lines = jq --arg ver $PkgVersion --slurpfile host $HostPkgJson $PkgJsonFilter $path
+    $lines = jq --arg ver $PkgVersion --slurpfile host $HostPkgJson -f $PkgJsonFilterFile $path
     if ($LASTEXITCODE -ne 0) { throw "jq failed to update $path" }
     Write-JsonFile $tmp $lines
 
@@ -390,9 +394,12 @@ if ($releaseMode) {
     Write-Host "WASM release build complete! Output is in the 'pkg' directory."
 }
 else {
-    Write-Host "Building wasm package in development mode..."
-    wasm-pack build --dev --target nodejs
-    Build-WorkersPkg '--dev'
+    # wasm-pack profile for development builds; -Optimize switches it to release
+    $devProfile = if ($Optimize) { '--release' } else { '--dev' }
+    Write-Host "Building wasm package in development mode ($devProfile)..."
+    wasm-pack build $devProfile --target nodejs
+    if ($LASTEXITCODE -ne 0) { throw "wasm-pack build failed" }
+    Build-WorkersPkg $devProfile
     Write-Host "WASM development build complete! Output is in the 'pkg' directory."
 }
 
@@ -411,13 +418,11 @@ if (-not $releaseMode) {
     Write-Host "Setting up development environment..."
 
     if (Test-Path 'www') {
-        Write-Host "Copying WASM files to www project..."
-        $dest = 'www/node_modules/@jat/subconverter-wasm'
-        # if (-not (Test-Path $dest)) {
-        #     New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        # }
-        # Copy-Item -Path 'pkg\*' -Destination $dest -Recurse -Force
-        Write-Host "Successfully copied WASM files to $dest"
+        # www depends on file:../pkg (pnpm-workspace.yaml override), which pnpm copies into
+        # node_modules; reinstalling refreshes that copy with the new build
+        Write-Host "Installing the new WASM package into www..."
+        pnpm --dir www install
+        if ($LASTEXITCODE -ne 0) { throw "pnpm install in www failed" }
         Write-Host "Note: You'll need to run this script again after any changes to the WASM code"
     }
     else {

@@ -2,13 +2,23 @@
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
 
   "name": "subconverter-rs",
+  "main": "vinext/server/fetch-handler",
   "compatibility_date": "2026-10-01",
+
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS",
+  },
 
   "cache": {
     "enabled": true,
   },
 
   "observability": {
+    "issues": {
+      "enabled": true,
+    },
     "logs": {
       "enabled": true,
     },

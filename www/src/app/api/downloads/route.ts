@@ -130,7 +130,9 @@ export async function GET(_request: NextRequest) {
             });
         });
 
-        return NextResponse.json(clientDownloads);
+        // Reflect admin changes to the download list immediately (vinext sets no Cache-Control on
+        // handlers that do not read the request, and Workers Cache would store the response)
+        return NextResponse.json(clientDownloads, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error) {
         console.error('Error fetching downloads:', error);
         return NextResponse.json(

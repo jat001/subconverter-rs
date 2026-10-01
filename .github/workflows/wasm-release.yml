@@ -109,14 +109,8 @@ jobs:
       - name: Update package.json in pkg directory
         run: |
           VERSION="${{ steps.set-version.outputs.version }}"
-          jq --arg ver "$VERSION" --slurpfile host wasm-host/package.json '
-            .name = "@jat/subconverter-wasm"
-            | .publishConfig = {"access": "public"}
-            | .version = $ver
-            | .files = ((.files // []) as $f | $f + (["snippets/", "workers/"] - $f))
-            | .dependencies = ((.dependencies // {}) + ($host[0].dependencies // {}))
-            | .repository = {"type": "git", "url": "git+https://github.com/jat001/subconverter-rs.git"}
-          ' pkg/package.json > tmp.json && mv tmp.json pkg/package.json
+          jq --arg ver "$VERSION" --slurpfile host wasm-host/package.json -f scripts/pkg-package.jq \
+            pkg/package.json > tmp.json && mv tmp.json pkg/package.json
 
       # npm >= 11.5.1 is required for OIDC trusted publishing
       - name: Ensure npm supports trusted publishing

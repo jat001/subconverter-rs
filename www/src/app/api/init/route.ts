@@ -15,13 +15,15 @@ export async function GET() {
         const initialized = await wasmModule.initialize_subconverter_webapp();
         console.log(`Initialization result: ${initialized}`);
 
+        // This GET has side effects, so it must never be answered from a cache (vinext sets no
+        // Cache-Control on handlers that do not read the request, and Workers Cache would store it)
         return NextResponse.json({
             success: true,
             githubLoadTriggered: initialized, // Return whether the load was triggered
             message: initialized
                 ? 'VFS initialized, GitHub load was triggered.'
                 : 'VFS already initialized or GitHub load not needed.',
-        });
+        }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error: any) {
         console.error('Error initializing VFS:', error);
         const errorMessage = typeof error === 'string' ? error : (error.message || 'Unknown WASM error');
