@@ -3,6 +3,14 @@ use crate::Settings;
 
 use super::{Proxy, RegexMatchConfigs};
 
+// Only used by the JS sort/filter script support below
+#[cfg(feature = "js-runtime")]
+use super::ProxyType;
+#[cfg(feature = "js-runtime")]
+use crate::utils::file_get_async;
+#[cfg(feature = "js-runtime")]
+use std::cmp::Ordering;
+
 /// Settings for subscription export operations
 pub struct ExtraSettings {
     /// Whether to enable the rule generator
