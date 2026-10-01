@@ -55,8 +55,15 @@ The Rust code for `vercel_kv_vfs.rs` doesn't need any modifications - it will wo
 ## Notes
 
 - Binary data is handled seamlessly across platforms (Uint8Array in JavaScript, &[u8] in Rust)
+- On Upstash Redis every value is a string: bytes are stored as `subconverter:base64:` followed by base64, text as-is (text that itself starts with `subconverter:base64:` or `subconverter:text:` gets a `subconverter:text:` prefix). Bytes written by older versions as JSON objects (`{"0":104,"1":105}`) are still read correctly.
 - All operations are async
 - Each platform has slightly different behavior but this adapter normalizes the behavior
+
+## Tests
+
+```bash
+npm test # node --test, Node >= 22.15
+```
 
 ## Error Handling
 

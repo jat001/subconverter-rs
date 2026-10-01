@@ -9,6 +9,135 @@ const NETLIFY_STORE_NAME = `subconverter-data-v${CURRENT_STORAGE_VERSION}`
 
 // ---------------------
 
+// --- Upstash value encoding ---
+// @upstash/redis JSON.stringify's non-string values on write (a Uint8Array
+// becomes '{"0":1,"1":2,...}'), JSON.parse's replies by default ("123" -> 123,
+// "{...}" -> object) and UTF-8 decodes every reply. So the client is created
+// with automaticDeserialization: false and every value is stored as a string:
+// - bytes as UPSTASH_BYTES_MARKER + base64;
+// - text as-is, or with UPSTASH_TEXT_MARKER in front if it starts with a marker.
+// Values written before this encoding stay readable without a migration: text
+// was stored as-is, and bytes as the JSON of a Uint8Array (decodeLegacyBytes).
+const UPSTASH_BYTES_MARKER = 'subconverter:base64:'
+const UPSTASH_TEXT_MARKER = 'subconverter:text:'
+
+function bytesToBase64(bytes) {
+  let binary = ''
+  // Chunked so String.fromCharCode doesn't exceed the argument limit
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000))
+  }
+  return btoa(binary)
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes
+}
+
+// Returns the bytes of a value stored as JSON.stringify(Uint8Array), or
+// undefined if raw is not in that form.
+function decodeLegacyBytes(raw) {
+  if (!raw.startsWith('{')) {
+    return undefined
+  }
+  let parsed
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return undefined
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return undefined
+  }
+  const length = Object.keys(parsed).length
+  const bytes = new Uint8Array(length)
+  for (let i = 0; i < length; i++) {
+    const byte = parsed[i]
+    if (!Number.isInteger(byte) || byte < 0 || byte > 255) {
+      return undefined
+    }
+    bytes[i] = byte
+  }
+  return bytes
+}
+
+function encodeUpstashBytes(bytes) {
+  return UPSTASH_BYTES_MARKER + bytesToBase64(bytes)
+}
+
+function encodeUpstashText(text) {
+  return text.startsWith(UPSTASH_BYTES_MARKER) ||
+    text.startsWith(UPSTASH_TEXT_MARKER)
+    ? UPSTASH_TEXT_MARKER + text
+    : text
+}
+
+function decodeUpstashBytes(raw) {
+  if (raw.startsWith(UPSTASH_BYTES_MARKER)) {
+    return base64ToBytes(raw.slice(UPSTASH_BYTES_MARKER.length))
+  }
+  if (raw.startsWith(UPSTASH_TEXT_MARKER)) {
+    return new TextEncoder().encode(raw.slice(UPSTASH_TEXT_MARKER.length))
+  }
+  return decodeLegacyBytes(raw) ?? new TextEncoder().encode(raw)
+}
+
+function decodeUpstashText(raw) {
+  if (raw.startsWith(UPSTASH_BYTES_MARKER)) {
+    return new TextDecoder().decode(
+      base64ToBytes(raw.slice(UPSTASH_BYTES_MARKER.length)),
+    )
+  }
+  if (raw.startsWith(UPSTASH_TEXT_MARKER)) {
+    return raw.slice(UPSTASH_TEXT_MARKER.length)
+  }
+  return raw
+}
+
+// Adapter over an @upstash/redis client created with
+// automaticDeserialization: false, so replies are the stored strings.
+function createUpstashAdapter(redis, prefix) {
+  const fullKey = (key) => `${prefix}/${key}`
+  const getRaw = async (key) => {
+    const raw = await redis.get(fullKey(key))
+    return raw === null || raw === undefined ? undefined : String(raw)
+  }
+
+  return {
+    _baseRedis: redis,
+    get: async (key) => {
+      const raw = await getRaw(key)
+      return raw === undefined ? null : decodeUpstashBytes(raw)
+    },
+    set: (key, value) => redis.set(fullKey(key), encodeUpstashBytes(value)),
+    getText: async (key) => {
+      const raw = await getRaw(key)
+      return raw === undefined ? undefined : decodeUpstashText(raw)
+    },
+    setText: (key, value) => redis.set(fullKey(key), encodeUpstashText(value)),
+    exists: (key) => redis.exists(fullKey(key)),
+    del: (key) => redis.del(fullKey(key)),
+    scan: async (cursor, options = {}) => {
+      const { match = '*', count = 10 } = options
+      // Adapt the match pattern to include the prefix
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: fullKey(match),
+        count,
+      })
+      // Remove prefix from returned keys
+      const unprefixedKeys = keys.map((k) =>
+        k.startsWith(prefix + '/') ? k.substring(prefix.length + 1) : k,
+      )
+      return [nextCursor, unprefixedKeys]
+    },
+  }
+}
+
 // Expose the localStorageMap for debugging
 let localStorageMap = new Map() // Local in-memory fallback
 let kv // Lazy load KV
@@ -73,6 +202,8 @@ async function getKv() {
         const baseRedis = new Redis({
           url: process.env.KV_REST_API_URL,
           token: process.env.KV_REST_API_TOKEN,
+          // Values are encoded by the adapter (see UPSTASH_BYTES_MARKER)
+          automaticDeserialization: false,
         })
         console.log(
           'Using Upstash Redis for storage (version prefix: ',
@@ -81,30 +212,7 @@ async function getKv() {
         )
 
         // Create adapter with version prefixing
-        kv = {
-          _baseRedis: baseRedis,
-          get: (key) => baseRedis.get(`${UPSTASH_REDIS_PREFIX}/${key}`),
-          set: (key, value) =>
-            baseRedis.set(`${UPSTASH_REDIS_PREFIX}/${key}`, value),
-          exists: (key) => baseRedis.exists(`${UPSTASH_REDIS_PREFIX}/${key}`),
-          del: (key) => baseRedis.del(`${UPSTASH_REDIS_PREFIX}/${key}`),
-          scan: async (cursor, options = {}) => {
-            const { match = '*', count = 10 } = options
-            // Adapt the match pattern to include the prefix
-            const prefixedMatch = `${UPSTASH_REDIS_PREFIX}/${match}`
-            const [nextCursor, keys] = await baseRedis.scan(cursor, {
-              match: prefixedMatch,
-              count,
-            })
-            // Remove prefix from returned keys
-            const unprefixedKeys = keys.map((k) =>
-              k.startsWith(UPSTASH_REDIS_PREFIX + '/')
-                ? k.substring(UPSTASH_REDIS_PREFIX.length + 1)
-                : k,
-            )
-            return [nextCursor, unprefixedKeys]
-          },
-        }
+        kv = createUpstashAdapter(baseRedis, UPSTASH_REDIS_PREFIX)
       }
       // Check for Netlify Blobs environment
       else if (isNetlifyEnvironment()) {
@@ -245,8 +353,7 @@ async function getKv() {
 }
 
 // Helper to handle potential null from kv.get
-// Both Upstash Redis and Netlify Blobs may store raw bytes differently
-// Upstash Redis may return a string for values stored through its REST API.
+// The Upstash adapter decodes stored values back to a Uint8Array.
 // For Netlify Blobs, we request arrayBuffer type and convert to Uint8Array
 async function kv_get(key) {
   try {
@@ -259,7 +366,6 @@ async function kv_get(key) {
       // Handles Uint8Array from in-memory fallback or Netlify Blobs
       return value
     } else if (typeof value === 'string') {
-      // Upstash Redis might return a string for non-binary data
       return value
     }
 
@@ -275,13 +381,9 @@ async function kv_get_text(key) {
   try {
     const kvClient = await getKv()
     // Upstash Redis, Netlify Blobs, and fallback stores might return strings or binary data
-    if (kvClient._baseRedis && typeof kvClient._baseRedis.get === 'function') {
-      // Upstash Redis: Use get, it should return string or null
-      const value = await kvClient._baseRedis.get(
-        `${UPSTASH_REDIS_PREFIX}/${key}`,
-      )
-      // Ensure it's a string or return undefined if null/not string
-      return typeof value === 'string' ? value : undefined
+    if (typeof kvClient.getText === 'function') {
+      // Upstash Redis: the adapter decodes the stored value to a string
+      return await kvClient.getText(key)
     } else if (
       isNetlifyBlobs &&
       kvClient._store &&
@@ -338,9 +440,9 @@ async function kv_set_text(key, value /* String from Rust */) {
   try {
     const kvClient = await getKv()
     // Pass the string value directly to the underlying store
-    if (kvClient._baseRedis && typeof kvClient._baseRedis.set === 'function') {
-      // Upstash Redis: Use prefix and set string directly
-      await kvClient._baseRedis.set(`${UPSTASH_REDIS_PREFIX}/${key}`, value)
+    if (typeof kvClient.setText === 'function') {
+      // Upstash Redis: the adapter stores the string in its text encoding
+      await kvClient.setText(key, value)
     } else if (
       isNetlifyBlobs &&
       kvClient._store &&
