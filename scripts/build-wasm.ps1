@@ -21,8 +21,8 @@ Subconverter WASM Build & Release Script (PowerShell)
 Usage Options:
   -Release           Build in release mode
   -Optimize          Development flow (versions untouched, www reinstalled) with release-profile WASM and wasm-opt
-                     on the Workers build, e.g. before deploying www to Cloudflare Workers, whose size limit the
-                     dev build exceeds
+                     on the Workers build, e.g. before deploying www to Cloudflare Workers, where a dev build
+                     uses about 2 s of CPU per conversion and runs into the CPU time limit
   -PrepareRelease    Prepare a release: Update version, create temporary tag, and trigger GitHub Actions
   -BumpPatch         Bump patch version number, commit change and prepare release
   -BumpBeta          Bump version for beta/preview release on current branch (not main), build locally, and deploy www to Netlify preview
@@ -398,8 +398,9 @@ else {
     # wasm-pack profile for development builds; -Optimize switches it to release
     $devProfile = if ($Optimize) { '--release' } else { '--dev' }
     Write-Host "Building wasm package in development mode ($devProfile)..."
-    # wasm-opt (about a minute per build) is only worth it for the Workers build, which has a size limit;
-    # dev builds skip it anyway, so this only matters for -Optimize
+    # wasm-opt (about a minute per package) only runs on the Workers build, where it shrinks the WASM by a
+    # quarter and shortens startup a little; the nodejs package is only used locally. Dev builds skip it
+    # anyway, so this only matters for -Optimize
     wasm-pack build $devProfile --target nodejs --no-opt
     if ($LASTEXITCODE -ne 0) { throw "wasm-pack build failed" }
     Build-WorkersPkg $devProfile

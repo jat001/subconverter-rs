@@ -83,8 +83,10 @@ pnpm deploy:netlify
 ### Cloudflare Workers
 
 Workers run the app through [vinext](https://github.com/cloudflare/vinext) instead of `next build`; the
-Worker and its `KV` binding are configured in `wrangler.jsonc`. The development WASM build is too large
-for the Workers size limit, so build an optimized one first (versions are left untouched):
+Worker and its `KV` binding are configured in `wrangler.jsonc`. Deploy a release-profile WASM build: a
+development build uses about 2 s of CPU per conversion and runs into the Workers CPU time limit.
+`--optimize` builds one without changing versions, and runs wasm-opt on the Workers package (a quarter
+smaller, slightly faster startup):
 
 ```bash
 # from the repository root
@@ -99,6 +101,10 @@ pnpm run start:vinext                    # try the built Worker locally in worke
 pnpm run deploy:vinext
 pnpm exec wrangler secret put ADMIN_TOKEN
 ```
+
+A conversion with the default rule sets takes roughly 150–900 ms of CPU time on Workers (measured with
+`wrangler tail`). The Workers Free plan allows 10 ms per request and only tolerates occasional overruns,
+so some conversions fail with `exceededCpu` there; Workers Paid (30 s by default) runs them reliably.
 
 #### Workers Builds
 
