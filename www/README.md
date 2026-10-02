@@ -117,7 +117,8 @@ With the repository connected in the Worker's Git integration, every push builds
 
 Workers Builds caches the pnpm store and the `.next/cache` directory of Next.js projects only, so the
 script keeps the Rust toolchain, cargo registry, build artifacts and wasm-pack's tools in
-`www/.next/cache` to reuse them between builds.
+`www/.next/cache` to reuse them between builds. wasm-opt runs through `scripts/wasm-opt-cache.sh`,
+which reuses the previous output when the Rust code did not change.
 
 ## License
 

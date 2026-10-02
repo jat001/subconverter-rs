@@ -18,6 +18,8 @@
 set -euo pipefail
 
 WASM_PACK_VERSION=0.15.0
+# The wasm-opt release wasm-pack 0.15 downloads by default, so the output matches local builds
+BINARYEN_VERSION=version_117
 JQ_VERSION=1.8.2
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -28,7 +30,7 @@ export CARGO_HOME="$cache/cargo"
 export CARGO_TARGET_DIR="$cache/target"
 export WASM_PACK_CACHE="$cache/wasm-pack"
 export PATH="$bin:$CARGO_HOME/bin:$PATH"
-# wasm-pack downloads wasm-opt into WASM_PACK_CACHE but does not create it
+# wasm-pack downloads missing tools into WASM_PACK_CACHE but does not create it
 mkdir -p "$bin" "$WASM_PACK_CACHE"
 
 if [ ! -x "$CARGO_HOME/bin/rustup" ]; then
@@ -63,6 +65,19 @@ if [ "$(wasm-bindgen --version 2>/dev/null)" != "wasm-bindgen $wasm_bindgen_vers
   curl -sSfL "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/$wasm_bindgen_version/$archive.tar.gz" |
     tar -xz --strip-components=1 -C "$bin" "$archive/wasm-bindgen" "$archive/wasm-bindgen-test-runner"
 fi
+
+# wasm-pack also takes wasm-opt from PATH: a wrapper that reuses the previous output when the Rust code
+# did not change (see wasm-opt-cache.sh), around the pinned binaryen release
+if [ "$(cat "$cache/binaryen/VERSION" 2>/dev/null)" != "$BINARYEN_VERSION" ]; then
+  echo "Installing binaryen $BINARYEN_VERSION..."
+  rm -rf "$cache/binaryen"
+  mkdir -p "$cache/binaryen/bin"
+  archive="binaryen-$BINARYEN_VERSION"
+  curl -sSfL "https://github.com/WebAssembly/binaryen/releases/download/$BINARYEN_VERSION/$archive-x86_64-linux.tar.gz" |
+    tar -xz --strip-components=2 -C "$cache/binaryen/bin" "$archive/bin/wasm-opt"
+  echo "$BINARYEN_VERSION" >"$cache/binaryen/VERSION"
+fi
+install -m 755 "$repo_root/scripts/wasm-opt-cache.sh" "$bin/wasm-opt"
 
 if ! command -v jq >/dev/null; then
   echo "Installing jq $JQ_VERSION..."
