@@ -177,8 +177,8 @@ importers:
         version: 1.39.0
     devDependencies:
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^24.19.1
+        version: 24.19.1
       typescript:
         specifier: npm:typescript-native-bridge@6.0.3-bridge.18.tsgo.7.0.2
         version: typescript-native-bridge@6.0.3-bridge.18.tsgo.7.0.2
@@ -262,8 +262,8 @@ packages:
     resolution: {integrity: sha512-eSYWTm620tTk45EKSedaUL8MFYI8hW164hIXsgIHyxu3VobUB3fFCu5t0hQby6OoWRPsG1KkKUG2M5UadiLiVg==}
     engines: {node: '>=14'}
 
-  '@types/node@24.19.0':
-    resolution: {integrity: sha512-zY+5tKxXdhGh1PYI0ac+7juvEu4OI6vWtVVoj5i2m42jxAY1U+zHGt6QCyOFwykdP62sM3MJ9stoYYUw5aCWew==}
+  '@types/node@24.19.1':
+    resolution: {integrity: sha512-aS3/DG0oM05K0RIXXP+hKjinGG5IgSSVGzswZxW3O0sS3pH4/fycXundUC9XsszgKCk4gHXylTEK6hyFxVxnoQ==}
 
   '@typescript-native-bridge/darwin-arm64@6.0.3-bridge.18.tsgo.7.0.2':
     resolution: {integrity: sha512-cuLVc0OVh1u4xyo9fQcJAxMca3MJqEJs3TSN0QhGPbYv5T4gYBiHSe69HWL7A27PyaSFuPMTgzN9RqoqlYALAw==}
@@ -524,7 +524,7 @@ snapshots:
 
   '@opentelemetry/semantic-conventions@1.43.0': {}
 
-  '@types/node@24.19.0':
+  '@types/node@24.19.1':
     dependencies:
       undici-types: 7.24.6
 
