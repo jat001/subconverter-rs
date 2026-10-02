@@ -80,6 +80,16 @@ variables.
 pnpm deploy:netlify
 ```
 
+On Vercel the Git integration builds every push from source on its Linux build machines (Root
+Directory `www`): `vercel.json` runs `scripts/vercel-install.sh` as the install command, which builds
+the WASM package (Rust, release profile, Node target only) before installing www, and `next build` runs
+as usual. Prefer that over `vercel build` / `vercel deploy --prebuilt` from Windows, where the current
+Vercel CLI stores symlink targets verbatim (absolute junction paths, backslashes) and misses build traces
+([vercel/vercel#17631](https://github.com/vercel/vercel/pull/17631),
+[vercel/vercel#17632](https://github.com/vercel/vercel/pull/17632)). Vercel's build cache only covers
+`node_modules` and `.next/cache` (1 GB in all), so the script keeps the cargo registry, build artifacts and
+WASM tools in `www/.next/cache` and installs the Rust toolchain on every build.
+
 ### Cloudflare Workers
 
 Workers run the app through [vinext](https://github.com/cloudflare/vinext) instead of `next build`; the
