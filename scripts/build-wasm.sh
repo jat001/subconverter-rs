@@ -10,8 +10,9 @@ Subconverter WASM Build & Release Script
 ---------------------------------------
 Usage Options:
   --release          Build in release mode
-  --optimize         Development flow (versions untouched, www reinstalled) with optimized release-profile WASM,
-                     e.g. before deploying www to Cloudflare Workers, whose size limit the dev build exceeds
+  --optimize         Development flow (versions untouched, www reinstalled) with release-profile WASM and wasm-opt
+                     on the Workers build, e.g. before deploying www to Cloudflare Workers, whose size limit the
+                     dev build exceeds
   --prepare-release  Prepare a release: Update version, create temporary tag, and trigger GitHub Actions
   --bump-patch       Bump patch version number, commit change and prepare release (convenient for routine updates)
   --bump-beta        Bump version for beta/preview release on current branch (not main), build locally, and deploy www to Netlify preview
@@ -391,7 +392,9 @@ if [ "$RELEASE_MODE" = true ]; then
   echo "WASM release build complete! Output is in the 'pkg' directory."
 else
   echo "Building wasm package in development mode ($DEV_PROFILE)..."
-  wasm-pack build "$DEV_PROFILE" --target nodejs
+  # wasm-opt (about a minute per build) is only worth it for the Workers build, which has a size limit;
+  # dev builds skip it anyway, so this only matters for --optimize
+  wasm-pack build "$DEV_PROFILE" --target nodejs --no-opt
   build_workers_pkg "$DEV_PROFILE"
   echo "WASM development build complete! Output is in the 'pkg' directory."
 fi
