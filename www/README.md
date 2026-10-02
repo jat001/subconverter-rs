@@ -100,6 +100,25 @@ pnpm run deploy:vinext
 pnpm exec wrangler secret put ADMIN_TOKEN
 ```
 
+#### Workers Builds
+
+With the repository connected in the Worker's Git integration, every push builds everything from source
+(Rust, the WASM package, the Worker) through `scripts/workers-build.sh`. Configure Settings > Build as:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | `www` |
+| Build command | `bash ../scripts/workers-build.sh` |
+| Deploy command | `pnpm exec wrangler deploy --config dist/server/wrangler.json` |
+| Non-production branch deploy command | `pnpm exec wrangler versions upload --config dist/server/wrangler.json` (only if branch builds are enabled) |
+| Build watch paths | include `*` (the default), so changes anywhere in the repository rebuild |
+| Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12.8.2` |
+| Build cache | enabled |
+
+Workers Builds caches the pnpm store and the `.next/cache` directory of Next.js projects only, so the
+script keeps the Rust toolchain, cargo registry, build artifacts and wasm-pack's tools in
+`www/.next/cache` to reuse them between builds.
+
 ## License
 
 MIT

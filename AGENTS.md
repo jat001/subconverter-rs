@@ -38,6 +38,8 @@ pnpm rebuild:wasm:dev                        # rebuild wasm then start dev serve
 pnpm lint
 pnpm run build:vinext                        # Cloudflare Workers build (vinext) into dist/
 pnpm run start:vinext                        # run that build locally in workerd (wrangler dev)
+# Cloudflare Workers Builds (Git integration, root directory www) runs scripts/workers-build.sh: a full from-source
+# build on every push, with the Rust toolchain/registry/target cached in www/.next/cache (see www/README.md)
 ```
 
 Optional cargo feature `js-runtime` (rquickjs, non-wasm only) enables JS scripting support; CI release builds use `--features=web-api,js-runtime`.

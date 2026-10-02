@@ -6,7 +6,7 @@
 #   Root directory:   www
 #   Build command:    bash ../scripts/workers-build.sh
 #   Deploy command:   pnpm exec wrangler deploy --config dist/server/wrangler.json
-#   Non-production branch deploy command:
+#   Non-production branch deploy command (only if branch builds are enabled):
 #                     pnpm exec wrangler versions upload --config dist/server/wrangler.json
 #   Build variables:  SKIP_DEPENDENCY_INSTALL=1 (www can only be installed once ../pkg is built)
 #                     PNPM_VERSION=12.8.2
@@ -28,7 +28,8 @@ export CARGO_HOME="$cache/cargo"
 export CARGO_TARGET_DIR="$cache/target"
 export WASM_PACK_CACHE="$cache/wasm-pack"
 export PATH="$bin:$CARGO_HOME/bin:$PATH"
-mkdir -p "$bin"
+# wasm-pack downloads wasm-opt into WASM_PACK_CACHE but does not create it
+mkdir -p "$bin" "$WASM_PACK_CACHE"
 
 if [ ! -x "$CARGO_HOME/bin/rustup" ]; then
   echo "Installing rustup..."
@@ -38,11 +39,29 @@ fi
 rustup toolchain install stable --profile minimal --target wasm32-unknown-unknown
 rustup default stable
 
+# Artifacts from another compiler version are never reused, so drop them instead of caching them
+rustc_version="$(rustc -V)"
+if [ "$(cat "$CARGO_TARGET_DIR/.rustc-version" 2>/dev/null)" != "$rustc_version" ]; then
+  rm -rf "$CARGO_TARGET_DIR"
+  mkdir -p "$CARGO_TARGET_DIR"
+  echo "$rustc_version" >"$CARGO_TARGET_DIR/.rustc-version"
+fi
+
 if [ "$(wasm-pack --version 2>/dev/null)" != "wasm-pack $WASM_PACK_VERSION" ]; then
   echo "Installing wasm-pack $WASM_PACK_VERSION..."
   archive="wasm-pack-v$WASM_PACK_VERSION-x86_64-unknown-linux-musl"
   curl -sSfL "https://github.com/wasm-bindgen/wasm-pack/releases/download/v$WASM_PACK_VERSION/$archive.tar.gz" |
     tar -xz --strip-components=1 -C "$bin" "$archive/wasm-pack"
+fi
+
+# wasm-pack uses a wasm-bindgen from PATH when its version matches Cargo.lock; otherwise it may fall back
+# to compiling wasm-bindgen-cli with `cargo install`, which is slow and bloats the cache
+wasm_bindgen_version="$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' "$repo_root/Cargo.lock")"
+if [ "$(wasm-bindgen --version 2>/dev/null)" != "wasm-bindgen $wasm_bindgen_version" ]; then
+  echo "Installing wasm-bindgen $wasm_bindgen_version..."
+  archive="wasm-bindgen-$wasm_bindgen_version-x86_64-unknown-linux-musl"
+  curl -sSfL "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/$wasm_bindgen_version/$archive.tar.gz" |
+    tar -xz --strip-components=1 -C "$bin" "$archive/wasm-bindgen" "$archive/wasm-bindgen-test-runner"
 fi
 
 if ! command -v jq >/dev/null; then
@@ -54,6 +73,8 @@ fi
 cd "$repo_root"
 # Builds wasm-host, both WASM targets in release mode and installs www
 ./scripts/build-wasm.sh --optimize
+# Extracted crate sources are recreated from registry/cache on demand; no need to cache them twice
+rm -rf "$CARGO_HOME/registry/src"
 
 cd www
 pnpm run build:vinext
