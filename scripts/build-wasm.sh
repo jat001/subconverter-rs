@@ -13,6 +13,7 @@ Usage Options:
   --optimize         Development flow (versions untouched, www reinstalled) with release-profile WASM and wasm-opt
                      on the Workers build, e.g. before deploying www to Cloudflare Workers, where a dev build
                      uses about 2 s of CPU per conversion and runs into the CPU time limit
+  --no-workers       Development flow without the Cloudflare Workers package, e.g. for Node-only deploys
   --prepare-release  Prepare a release: Update version, create temporary tag, and trigger GitHub Actions
   --bump-patch       Bump patch version number, commit change and prepare release (convenient for routine updates)
   --bump-beta        Bump version for beta/preview release on current branch (not main), build locally, and deploy www to Netlify preview
@@ -100,6 +101,8 @@ build_workers_pkg() {
 RELEASE_MODE=false
 # wasm-pack profile for development builds; --optimize switches it to release
 DEV_PROFILE=--dev
+# --no-workers skips the Cloudflare Workers package in development builds
+SKIP_WORKERS=false
 VERSION=""
 PREPARE_RELEASE=false
 BUMP_PATCH=false
@@ -113,6 +116,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   --optimize)
     DEV_PROFILE=--release
+    shift
+    ;;
+  --no-workers)
+    SKIP_WORKERS=true
     shift
     ;;
   --prepare-release)
@@ -137,7 +144,7 @@ while [[ $# -gt 0 ]]; do
     ;;
   *)
     echo "Unknown option: $1"
-    echo "Usage: $0 [--release] [--optimize] [--prepare-release] [--bump-patch] [--bump-beta] [--version X.Y.Z]"
+    echo "Usage: $0 [--release] [--optimize] [--no-workers] [--prepare-release] [--bump-patch] [--bump-beta] [--version X.Y.Z]"
     exit 1
     ;;
   esac
@@ -393,10 +400,15 @@ if [ "$RELEASE_MODE" = true ]; then
 else
   echo "Building wasm package in development mode ($DEV_PROFILE)..."
   # wasm-opt (about a minute per package) only runs on the Workers build, where it shrinks the WASM by a
-  # quarter and shortens startup a little; the nodejs package is only used locally. Dev builds skip it
-  # anyway, so this only matters for --optimize
+  # quarter and shortens startup a little; for the nodejs package (local, Vercel and Netlify functions)
+  # that is not worth the time. Dev builds skip it anyway, so this only matters for --optimize
   wasm-pack build "$DEV_PROFILE" --target nodejs --no-opt
-  build_workers_pkg "$DEV_PROFILE"
+  if [ "$SKIP_WORKERS" = false ]; then
+    build_workers_pkg "$DEV_PROFILE"
+  else
+    # Leave no stale Workers build behind for the package to pick up
+    rm -rf pkg/workers
+  fi
   echo "WASM development build complete! Output is in the 'pkg' directory."
 fi
 
