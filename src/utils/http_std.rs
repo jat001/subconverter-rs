@@ -142,7 +142,8 @@ pub async fn web_get_async(
     match response.body().await {
         Ok(body) => Ok(HttpResponse {
             status,
-            body: String::from_utf8(body.to_vec()).unwrap(),
+            // Lossy like the WASM build's response.text(): a non-UTF-8 body must not panic
+            body: String::from_utf8_lossy(&body).into_owned(),
             headers: resp_headers,
         }),
         Err(e) => Err(HttpError {
