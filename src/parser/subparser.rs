@@ -113,6 +113,31 @@ pub async fn add_nodes(
                 }
             };
 
+            // An error page is not a subscription; report the status instead of failing to parse it
+            if !(200..300).contains(&response.status) {
+                warn!(
+                    "Subscription {} answered with HTTP {}",
+                    link, response.status
+                );
+                return Err(format!(
+                    "the subscription server answered with HTTP {}{}",
+                    response.status,
+                    describe_body(&response.body)
+                        .map(|body| format!(": {}", body))
+                        .unwrap_or_default()
+                ));
+            }
+
+            // Neither is a login or error page served with 200, and parsing one can turn stray URLs
+            // in the page into bogus nodes
+            if is_html_document(&response.body) {
+                warn!("Subscription {} returned an HTML page", link);
+                return Err(format!(
+                    "the subscription server returned {} instead of a subscription",
+                    describe_body(&response.body).unwrap_or_default()
+                ));
+            }
+
             let sub_content = response.body;
             let headers = response.headers;
 
@@ -162,10 +187,18 @@ pub async fn add_nodes(
                     all_nodes.append(&mut nodes);
                     Ok(())
                 } else {
-                    Err(format!("Invalid subscription: '{}'", sub_content))
+                    Err(format!(
+                        "no supported nodes found in the subscription{}",
+                        describe_body(&sub_content)
+                            .map(|body| format!(", which starts with: {}", body))
+                            .unwrap_or_default()
+                    ))
                 }
             } else {
-                Err("Cannot download subscription data".to_string())
+                Err(format!(
+                    "the subscription is empty (HTTP {})",
+                    response.status
+                ))
             }
         }
         ConfType::Local => {
@@ -231,6 +264,51 @@ pub async fn add_nodes(
             }
         }
     }
+}
+
+/// Whether a response body is an HTML document (a login or error page) rather than a subscription
+fn is_html_document(body: &str) -> bool {
+    let start = body
+        .trim_start()
+        .chars()
+        .take(14)
+        .collect::<String>()
+        .to_ascii_lowercase();
+    start.starts_with("<!doctype html") || start.starts_with("<html")
+}
+
+/// `text` on one line, cut to at most 100 characters
+fn excerpt(text: &str) -> String {
+    const MAX_CHARS: usize = 100;
+    let collapsed = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut excerpt: String = collapsed.chars().take(MAX_CHARS).collect();
+    if collapsed.chars().count() > MAX_CHARS {
+        excerpt.push('…');
+    }
+    excerpt
+}
+
+/// Describes a response body for error messages without dumping all of it: an HTML page by its
+/// title, anything else by how it starts. None for a blank body.
+fn describe_body(body: &str) -> Option<String> {
+    if is_html_document(body) {
+        // ASCII lowercasing keeps byte offsets, so positions found in `lower` index `body` too
+        let lower = body.to_ascii_lowercase();
+        let title = lower
+            .find("<title")
+            .and_then(|open| {
+                let start = open + lower[open..].find('>')? + 1;
+                let end = start + lower[start..].find("</title")?;
+                Some(excerpt(&body[start..end]))
+            })
+            .filter(|title| !title.is_empty());
+        return Some(match title {
+            Some(title) => format!("a web page titled \"{}\"", title),
+            None => "a web page".to_string(),
+        });
+    }
+    let start = excerpt(body);
+    (!start.is_empty()).then_some(start)
 }
 
 /// Extracts a specific argument from a URL
@@ -334,4 +412,55 @@ fn should_ignore(
 
     // A node is ignored if it's excluded OR not included
     excluded || !included
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{describe_body, is_html_document};
+
+    #[test]
+    fn describe_body_shows_the_start_of_text() {
+        assert_eq!(describe_body("  \n\t "), None);
+        assert_eq!(
+            describe_body("{\"message\":\n   \"token expired\"}").as_deref(),
+            Some("{\"message\": \"token expired\"}")
+        );
+
+        let long = describe_body(&"x".repeat(150)).unwrap();
+        assert_eq!(long.chars().count(), 101);
+        assert!(long.ends_with('…'));
+
+        // Cuts on character boundaries
+        let cjk = describe_body(&"订阅".repeat(80)).unwrap();
+        assert_eq!(cjk.chars().count(), 101);
+    }
+
+    #[test]
+    fn describe_body_names_html_pages_by_title() {
+        let page = "\n<!DOCTYPE html>\n<!--[if lt IE 7]> <html class=\"ie6\"> <![endif]-->\n\
+                    <html><head><TITLE>\n  example.invalid | 530: 源站 DNS 错误\n</TITLE></head></html>";
+        assert!(is_html_document(page));
+        assert_eq!(
+            describe_body(page).as_deref(),
+            Some("a web page titled \"example.invalid | 530: 源站 DNS 错误\"")
+        );
+        assert_eq!(
+            describe_body("<html><body>Login required</body></html>").as_deref(),
+            Some("a web page")
+        );
+    }
+
+    #[test]
+    fn subscriptions_are_not_html_documents() {
+        for body in [
+            "c3M6Ly9ZV1Z6TFRJMU5pMW5ZMjA2Y0dGemMzZHZjbVFAMS4yLjMuNDo4Mzg4I25vZGU=",
+            "ss://YWVzLTI1Ni1nY206cGFzc3dvcmQ@1.2.3.4:8388#node",
+            "proxies:\n  - name: node\n    type: ss",
+            "[General]\nloglevel = notify",
+            "{\"outbounds\": []}",
+            "<h1>404 Not Found</h1>",
+        ] {
+            assert!(!is_html_document(body), "{body}");
+        }
+    }
 }

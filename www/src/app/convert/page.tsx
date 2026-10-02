@@ -860,7 +860,7 @@ export default function ConvertPage() {
                     <div className="p-4 border border-red-400 bg-red-50 rounded-md">
                         <h3 className="text-lg font-semibold text-red-800">{commonT('error')}</h3>
                         <p className="text-red-700">{error.error}</p>
-                        {error.details && <p className="mt-1 text-sm text-red-600">{error.details}</p>}
+                        {error.details && <p className="mt-1 text-sm text-red-600 whitespace-pre-line">{error.details}</p>}
                     </div>
                 )}
 

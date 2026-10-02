@@ -130,7 +130,7 @@ export async function convertSubscription(formData: Partial<SubconverterFormPara
                 throw err;
             }
             throw {
-                error: 'Error from server',
+                error: `Error from server (HTTP ${response.status})`,
                 details: responseText
             };
         }

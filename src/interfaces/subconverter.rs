@@ -611,6 +611,24 @@ pub async fn parse_subscription(
     Ok(nodes)
 }
 
+/// Names a subscription link in error messages by its position and host. The full URL is left out
+/// because subscription URLs usually embed an access token, and these messages are shown to users.
+fn describe_link(index: usize, link: &str) -> String {
+    // `tag:<group>,<link>` assigns a custom group
+    let link = link
+        .strip_prefix("tag:")
+        .and_then(|rest| rest.split_once(','))
+        .map_or(link, |(_, rest)| rest);
+    match url::Url::parse(link) {
+        Ok(parsed) if matches!(parsed.scheme(), "http" | "https") => format!(
+            "link #{} ({})",
+            index + 1,
+            parsed.host_str().unwrap_or_default()
+        ),
+        _ => format!("link #{}", index + 1),
+    }
+}
+
 /// Process a subscription conversion request
 pub async fn subconverter(mut config: SubconverterConfig) -> Result<SubconverterResult, String> {
     let mut response_headers = HashMap::new();
@@ -652,20 +670,31 @@ pub async fn subconverter(mut config: SubconverterConfig) -> Result<Subconverter
     }
 
     let mut group_id = 0;
+    // Why each main URL contributed no nodes, reported if the conversion ends up with none
+    let mut failures = Vec::new();
     // Parse main URLs
     info!("Fetching node data from main URLs");
-    for url in &config.urls {
+    for (index, url) in config.urls.iter().enumerate() {
         debug!("Parsing URL: {}", url);
         match parse_subscription(url, opts.clone(), group_id, &config.request_headers).await {
             Ok(mut parsed_nodes) => {
                 info!("Found {} nodes from URL", parsed_nodes.len());
+                if parsed_nodes.is_empty() {
+                    // add_nodes only succeeds without nodes when filtering removed them all
+                    failures.push(format!(
+                        "{}: every node was removed by the include/exclude rules",
+                        describe_link(index, url)
+                    ));
+                }
                 nodes.append(&mut parsed_nodes);
             }
             Err(e) => {
                 error!("Failed to parse URL '{}': {}", url, e);
+                let failure = format!("{}: {}", describe_link(index, url), e);
                 if !global.skip_failed_links {
-                    return Err(format!("Failed to parse URL '{}': {}", url, e));
+                    return Err(format!("Failed to parse {}", failure));
                 }
+                failures.push(failure);
             }
         }
         group_id += 1;
@@ -673,7 +702,12 @@ pub async fn subconverter(mut config: SubconverterConfig) -> Result<Subconverter
 
     // Exit if found nothing
     if nodes.is_empty() && insert_nodes.is_empty() {
-        return Err("No nodes were found!".to_string());
+        let mut message = "No nodes were found!".to_string();
+        for failure in &failures {
+            message.push('\n');
+            message.push_str(failure);
+        }
+        return Err(message);
     }
 
     // Merge insert nodes and main nodes
@@ -1370,5 +1404,29 @@ impl RuleBases {
         } else {
             false
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::describe_link;
+
+    #[test]
+    fn describe_link_leaves_out_tokens() {
+        assert_eq!(
+            describe_link(
+                0,
+                "https://sub.example.com/api/v1/client/subscribe?token=secret"
+            ),
+            "link #1 (sub.example.com)"
+        );
+        assert_eq!(
+            describe_link(1, "tag:work,https://sub.example.com/s/secret"),
+            "link #2 (sub.example.com)"
+        );
+        assert_eq!(
+            describe_link(2, "ss://YWVzLTI1Ni1nY206cGFzcw@1.2.3.4:8388#node"),
+            "link #3"
+        );
     }
 }
