@@ -17,10 +17,12 @@ CI_TARGET_DIR="$repo_root/target"
 # shellcheck source=ci-toolchain.sh
 source "$repo_root/scripts/ci-toolchain.sh"
 
-# www and wasm-host require pnpm 12 (devEngines), while the build image provides an older default
-if [ "$(pnpm --version 2>/dev/null | cut -d. -f1)" != 12 ]; then
-  echo "Installing pnpm 12..."
-  npm install -g pnpm@12
+# www and wasm-host require pnpm 12 (devEngines). The image's pnpm is a Corepack shim with an older default
+# (npm cannot install over it), so make pnpm 12 Corepack's global default instead
+PNPM_VERSION="${PNPM_VERSION:-12.8.2}"
+if [ "$(pnpm --version 2>/dev/null | cut -d. -f1)" != "${PNPM_VERSION%%.*}" ]; then
+  echo "Activating pnpm $PNPM_VERSION through Corepack..."
+  COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack install --global "pnpm@$PNPM_VERSION"
 fi
 
 cd "$repo_root"

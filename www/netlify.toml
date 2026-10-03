@@ -2,5 +2,10 @@
 # The build command runs from the repository root, see scripts/netlify-build.sh for why.
 [build]
 command = "bash scripts/netlify-build.sh"
-# Resolved against the package directory: www/.next
-publish = ".next"
+# Paths here are resolved against the base directory (the repository root)
+publish = "www/.next"
+
+# Netlify detects frameworks in the base directory, which has no package.json, so the Next.js adapter has
+# to be named explicitly; it runs with the package directory as the app directory
+[[plugins]]
+package = "@netlify/plugin-nextjs"
