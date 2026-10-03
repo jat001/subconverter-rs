@@ -8,7 +8,7 @@ Rust rewrite of the C++ subconverter: converts proxy subscriptions between forma
 
 1. **Native HTTP server / CLI** — binary `subconverter` (actix-web, port 25500). The binary requires the `web-api` feature; plain `cargo build` compiles only the library.
 2. **Rust library** — `libsubconverter` (rlib).
-3. **WASM package** — `@jat/subconverter-wasm` npm package (cdylib via wasm-pack, `--target nodejs`), consumed by the Next.js frontend in `www/` and deployed as Netlify serverless functions. The same package ships a Cloudflare Workers build at `@jat/subconverter-wasm/workers` (`--target web` into `pkg/workers/`, entry files in `wasm-host/workers/`), because Workers cannot compile WASM from bytes at runtime. The root export resolves to that build under the `workerd` condition, so `import '@jat/subconverter-wasm'` works on both; the `pkg/package.json` patch lives in `scripts/pkg-package.jq`, shared by the build scripts and the release workflow.
+3. **WASM package** — `@jat/subconverter-wasm` npm package (cdylib via wasm-pack, `--target nodejs`), consumed by the API of the web app in `www/` on Node platforms (Vercel and Netlify functions). The same package ships a Cloudflare Workers build at `@jat/subconverter-wasm/workers` (`--target web` into `pkg/workers/`, entry files in `wasm-host/workers/`), because Workers cannot compile WASM from bytes at runtime. The root export resolves to that build under the `workerd` condition, so `import '@jat/subconverter-wasm'` works on both; the `pkg/package.json` patch lives in `scripts/pkg-package.jq`, shared by the build scripts and the release workflow.
 
 ## Commands
 
@@ -33,15 +33,16 @@ cargo check --target wasm32-unknown-unknown
 ./scripts/build-wasm.sh --optimize           # same with release-profile WASM (Workers deploys), no version changes
 
 # Frontend (www/, Node >= 24, pnpm; never npx in pnpm projects, use pnpm exec / pnpm dlx)
-cd www && pnpm install && pnpm dev
+cd www && pnpm install && pnpm dev           # SPA plus the API in Node (@hono/vite-dev-server)
 pnpm rebuild:wasm:dev                        # rebuild wasm then start dev server
 pnpm lint
-pnpm run build:vinext                        # Cloudflare Workers build (vinext) into dist/
-pnpm run start:vinext                        # run that build locally in workerd (wrangler dev)
+pnpm exec tsc --noEmit
+pnpm build                                   # the static SPA into dist/, the same for every platform
+pnpm run start:workers                       # dist/ plus the API Worker locally in workerd (wrangler dev)
 # Cloudflare Workers Builds (Git integration, root directory www) runs scripts/workers-build.sh: a full from-source
-# build on every push, with the Rust toolchain/registry/target cached in www/.next/cache (see www/README.md)
+# build on every push, with the Rust toolchain/registry/target cached in the pnpm store (see www/README.md)
 # Vercel builds every push on its Linux machines too: www/vercel.json runs scripts/vercel-install.sh (WASM from
-# source, then pnpm install) before `next build`; Netlify (base dir = repo root, package dir = www) runs
+# source, then pnpm install) before `vite build`; Netlify (base dir = repo root, package dir = www) runs
 # scripts/netlify-build.sh; all three platform scripts share scripts/ci-toolchain.sh
 # Settings that only exist in a platform dashboard are listed in www/README.md (Deployment); update that list
 # whenever such a setting changes, and prefer moving a setting into wrangler.jsonc / vercel.json / netlify.toml
@@ -49,7 +50,7 @@ pnpm run start:vinext                        # run that build locally in workerd
 
 Optional cargo feature `js-runtime` (rquickjs, non-wasm only) enables JS scripting support; CI release builds use `--features=web-api,js-runtime`.
 
-CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo fmt --check`, `cargo test`, `cargo check` for wasm32 and for the `js-runtime` feature (all with `RUSTFLAGS=-D warnings`), the wasm-host typecheck/tests (failing if the committed `wasm-host/dist/` is stale), and for `www/` a dev WASM build followed by `pnpm lint`, typecheck, `pnpm build` and the vinext Workers build with a `wrangler deploy --dry-run`.
+CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo fmt --check`, `cargo test`, `cargo check` for wasm32 and for the `js-runtime` feature (all with `RUSTFLAGS=-D warnings`), the wasm-host typecheck/tests (failing if the committed `wasm-host/dist/` is stale), and for `www/` a dev WASM build followed by `pnpm lint`, typecheck, `pnpm build` and a `wrangler deploy --dry-run` of the Worker.
 
 ## Release flow
 
@@ -72,7 +73,7 @@ The conversion pipeline is **parse → transform → generate**, orchestrated in
 - `src/settings/` — global `Settings` singleton (`Settings::current()`); loads `pref.toml` → `pref.yml` → `pref.ini` in that priority order. `external/` handles the `&config=` external configs.
 - `src/template/` — minijinja-based template rendering for base configs.
 - `base/` — runtime data, not code: example prefs, base config templates, rules, snippets. The server reads these at runtime.
-- `www/` — Next.js 16 App Router frontend (TypeScript, Tailwind 4, next-intl); calls `@jat/subconverter-wasm` from route handlers. Netlify (`www/netlify.toml`) and Vercel (`www/vercel.json`) deploy it with `next build`; Cloudflare Workers deploys it with [vinext](https://github.com/cloudflare/vinext) (`vite.config.ts`, `wrangler.jsonc` with the `KV` binding), which reimplements the Next.js API on Vite instead of using `next build`, so check both builds when changing `www/`. `/api/admin/*` and short URL management (`/api/s` except the public `GET /api/s/[id]` redirect) require `Authorization: Bearer $ADMIN_TOKEN` (`www/src/lib/admin-auth.ts`, a guard at the top of each handler; they are disabled when the variable is unset), and the browser side goes through `adminFetch()` in `www/src/lib/admin-token.ts`. Route handlers that do not read the request get no `Cache-Control` from vinext and would be stored by Workers Cache (`cache.enabled` in `wrangler.jsonc`), so set one explicitly on dynamic responses.
+- `www/` — web app, deployed identically to Cloudflare Workers, Vercel and Netlify. `src/` is a React SPA (Vite, react-router, use-intl, Tailwind 4) that `vite build` emits as static files, served from each platform's CDN. `server/` is the API: one Hono app on the web standard `Request`/`Response` (`server/app.ts` mounts the handlers in `server/routes/`, which call `@jat/subconverter-wasm`), run through a few lines of platform entry — `server/worker.ts` (Workers; `wrangler.jsonc` hands only `/api/*` to it via `run_worker_first`, with the `KV` binding), `api/index.ts` (Vercel Function behind a `vercel.json` rewrite) and `netlify/functions/api.mts` (Netlify Function on `/api/*`). Keep platform specifics in those entries and configs, not in `server/`. `/api/admin/*` and short URL management (`/api/s` except the public `GET /api/s/[id]` redirect) require `Authorization: Bearer $ADMIN_TOKEN` (`www/server/admin-auth.ts`, a guard at the top of each handler; they are disabled when the variable is unset), and the browser side goes through `adminFetch()` in `www/src/lib/admin-token.ts`. API responses default to `Cache-Control: no-store` (middleware in `server/app.ts`) so neither CDNs nor Workers Cache store them; a handler sets its own header to allow caching.
 
 ### Dual-target constraint
 
