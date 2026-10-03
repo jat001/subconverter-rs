@@ -94,6 +94,7 @@ Dashboard settings (Project configuration):
 | Deploy Previews | pull requests against the production branch or a branch deploy branch |
 | Build image | Ubuntu Noble 24.04, whose rustup and Corepack the build script relies on |
 | Node.js | 24.x (www requires 24 or later) |
+| Visitor access | Netlify Team Login for non-production deploys (also the team's default): unpublished deploys and their URLs need a Netlify login, the published deploy is public |
 | Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`, with the Functions scope (route handlers run as functions) and values for the Branch deploys and Production contexts; the Deploy Previews value is left empty, which turns the admin API off there. Netlify Blobs needs no configuration |
 
 Production deploys consume credits while branch deploys and Deploy Previews are free, so nothing deploys
@@ -158,7 +159,8 @@ so some conversions fail with `exceededCpu` there; Workers Paid (30 s by default
 Every Worker setting a deploy writes (compatibility date, assets, cache, observability, the `KV`
 binding, the workers.dev and preview URLs) lives in `wrangler.jsonc`, and the next deploy applies the
 file's values over any dashboard change. Only the secrets `ADMIN_TOKEN` and optionally `GITHUB_TOKEN`
-(Settings > Variables and Secrets, or `wrangler secret put`) and the build settings below exist in the
+(Settings > Variables and Secrets, or `wrangler secret put`), the build settings below and the account's
+Cloudflare Access protection of preview URLs (a login with the Cloudflare account) exist in the
 dashboard alone.
 
 #### Workers Builds
@@ -169,10 +171,11 @@ With the repository connected in the Worker's Git integration, every push builds
 | Setting | Value |
 | --- | --- |
 | Git repository | `jat001/subconverter-rs` |
-| Branch control | production branch `main`; builds for other branches are disabled (if enabled, give them `pnpm exec wrangler versions upload --config dist/server/wrangler.json` as the deploy command) |
+| Branch control | production branch `main` |
 | Root directory | `www` |
 | Build command | `bash ../scripts/workers-build.sh` |
-| Deploy command | `pnpm exec wrangler deploy --config dist/server/wrangler.json` |
+| Deploy command | `pnpm exec wrangler deploy`: the vinext build leaves a `.wrangler/deploy/config.json` redirect to `dist/server/wrangler.json`, which wrangler follows without `--config` |
+| Preview branch builds (the Preview tab of Build) | enabled, so other branches and pull requests get preview builds; their own settings repeat the build command, root directory, watch paths and variables, with `pnpm exec wrangler preview` as the preview command (Workers Previews, `previews` in `wrangler.jsonc`) |
 | Build watch paths | include `*` (the default), so changes anywhere in the repository rebuild |
 | Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12` |
 | Build cache | enabled |
