@@ -43,6 +43,8 @@ pnpm run start:vinext                        # run that build locally in workerd
 # Vercel builds every push on its Linux machines too: www/vercel.json runs scripts/vercel-install.sh (WASM from
 # source, then pnpm install) before `next build`; Netlify (base dir = repo root, package dir = www) runs
 # scripts/netlify-build.sh; all three platform scripts share scripts/ci-toolchain.sh
+# Settings that only exist in a platform dashboard are listed in www/README.md (Deployment); update that list
+# whenever such a setting changes, and prefer moving a setting into wrangler.jsonc / vercel.json / netlify.toml
 ```
 
 Optional cargo feature `js-runtime` (rquickjs, non-wasm only) enables JS scripting support; CI release builds use `--features=web-api,js-runtime`.

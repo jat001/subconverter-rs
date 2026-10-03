@@ -6,7 +6,7 @@
 # base directory, which has no lockfile, so Netlify does not run its own `pnpm install` of www before the
 # WASM package it depends on (file:../pkg) exists. The base directory does have a Cargo.lock, so Netlify
 # caches the preinstalled rustup toolchain, ~/.cargo/registry and target/ itself; only the small WASM
-# tools are fetched on every build.
+# tools are fetched on every build. www/README.md lists the site's other dashboard settings.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,7 +19,7 @@ source "$repo_root/scripts/ci-toolchain.sh"
 
 # www and wasm-host require pnpm 12 (devEngines). The image's pnpm is a Corepack shim with an older default
 # (npm cannot install over it), so make pnpm 12 Corepack's global default instead
-PNPM_VERSION="${PNPM_VERSION:-12.8.2}"
+PNPM_VERSION="${PNPM_VERSION:-12}"
 if [ "$(pnpm --version 2>/dev/null | cut -d. -f1)" != "${PNPM_VERSION%%.*}" ]; then
   echo "Activating pnpm $PNPM_VERSION through Corepack..."
   COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack install --global "pnpm@$PNPM_VERSION"

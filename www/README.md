@@ -71,31 +71,63 @@ ADMIN_TOKEN=<a long random string>
 Optionally set `GITHUB_TOKEN` too: missing config and rule files are loaded through the GitHub API, whose
 anonymous rate limit is easily exhausted from shared egress IPs such as Cloudflare's.
 
-### Netlify / Vercel
+Each platform below lists the settings that only exist in its dashboard; everything not listed is left at
+the platform's default.
 
-Both build with `next build` (`netlify.toml`, `vercel.json`). Set `ADMIN_TOKEN` in the site's environment
-variables.
+### Netlify
 
-On Netlify, set the base directory to the repository root (leave it empty) and the package directory to
-`www`. `netlify.toml` then runs `scripts/netlify-build.sh` from the repository root, which builds the
-WASM package from source (Rust, release profile, Node target only), installs www and runs `next build`.
-The root has no lockfile, so Netlify does not attempt its own `pnpm install` of www before the package
-exists, and it has a `Cargo.lock`, so Netlify caches the Rust toolchain, `~/.cargo/registry` and
-`target/` itself.
+`netlify.toml` sets the build command, the publish directory and the Next.js adapter. The build command
+runs `scripts/netlify-build.sh` from the repository root, which builds the WASM package from source
+(Rust, release profile, Node target only), installs www and runs `next build`. The root has no lockfile,
+so Netlify does not attempt its own `pnpm install` of www before the package exists, and it has a
+`Cargo.lock`, so Netlify caches the Rust toolchain, `~/.cargo/registry` and `target/` itself.
+
+Dashboard settings (Project configuration):
+
+| Setting | Value |
+| --- | --- |
+| Base directory | empty (the repository root) |
+| Package directory | `www`, where Netlify reads `netlify.toml` |
+| Build command, publish and functions directories | empty, `netlify.toml` provides them |
+| Production branch | `null`, a branch that does not exist, so no build deploys to production by itself |
+| Branch deploys | all branches |
+| Deploy Previews | pull requests against the production branch or a branch deploy branch |
+| Build image | Ubuntu Noble 24.04, whose rustup and Corepack the build script relies on |
+| Node.js | 24.x (www requires 24 or later) |
+| Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`, with the Functions scope (route handlers run as functions) and values for the Branch deploys and Production contexts; the Deploy Previews value is left empty, which turns the admin API off there. Netlify Blobs needs no configuration |
+
+Production deploys consume credits while branch deploys and Deploy Previews are free, so nothing deploys
+to production automatically: every push builds a branch deploy, and a finished deploy of `main` goes live
+through Publish deploy on its deploy page. The published deploy is still a branch deploy, so it uses the
+Branch deploys values of environment variables. Changed variables only apply to deploys built afterwards.
 
 ```bash
 pnpm deploy:netlify
 ```
 
-On Vercel the Git integration builds every push from source on its Linux build machines (Root
-Directory `www`): `vercel.json` runs `scripts/vercel-install.sh` as the install command, which builds
-the WASM package (Rust, release profile, Node target only) before installing www, and `next build` runs
-as usual. Prefer that over `vercel build` / `vercel deploy --prebuilt` from Windows, where the current
-Vercel CLI stores symlink targets verbatim (absolute junction paths, backslashes) and misses build traces
+### Vercel
+
+The Git integration builds every push from source on Vercel's Linux build machines: `vercel.json` runs
+`scripts/vercel-install.sh` as the install command, which builds the WASM package (Rust, release
+profile, Node target only) before installing www, and `next build` runs as usual. Prefer that over
+`vercel build` / `vercel deploy --prebuilt` from Windows, where the current Vercel CLI stores symlink
+targets verbatim (absolute junction paths, backslashes) and misses build traces
 ([vercel/vercel#17631](https://github.com/vercel/vercel/pull/17631),
 [vercel/vercel#17632](https://github.com/vercel/vercel/pull/17632)). Vercel's build cache only covers
 `node_modules` and `.next/cache` (1 GB in all), so the script keeps the cargo registry, build artifacts and
 WASM tools in `www/.next/cache` and installs the Rust toolchain on every build.
+
+Dashboard settings (project Settings). The framework preset, install and build commands show up there
+too; `vercel.json` overrides them, so keep the two the same:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `www` |
+| Include files outside the root directory in the Build Step | enabled, the install script builds from the repository root |
+| Node.js Version | 24.x; `engines.node` in `package.json` takes precedence anyway |
+| Production branch | `main`; other branches and pull requests get preview deployments |
+| Deployment Protection | Vercel Authentication, Standard Protection: previews need a Vercel login, the production domain is public |
+| Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`; an Upstash Redis store connected from the Marketplace provides `KV_REST_API_URL` and `KV_REST_API_TOKEN` (without one, files are only kept in memory) |
 
 ### Cloudflare Workers
 
@@ -123,19 +155,26 @@ A conversion with the default rule sets takes roughly 150–900 ms of CPU time o
 `wrangler tail`). The Workers Free plan allows 10 ms per request and only tolerates occasional overruns,
 so some conversions fail with `exceededCpu` there; Workers Paid (30 s by default) runs them reliably.
 
+Every Worker setting a deploy writes (compatibility date, assets, cache, observability, the `KV`
+binding, the workers.dev and preview URLs) lives in `wrangler.jsonc`, and the next deploy applies the
+file's values over any dashboard change. Only the secrets `ADMIN_TOKEN` and optionally `GITHUB_TOKEN`
+(Settings > Variables and Secrets, or `wrangler secret put`) and the build settings below exist in the
+dashboard alone.
+
 #### Workers Builds
 
 With the repository connected in the Worker's Git integration, every push builds everything from source
-(Rust, the WASM package, the Worker) through `scripts/workers-build.sh`. Configure Settings > Build as:
+(Rust, the WASM package, the Worker) through `scripts/workers-build.sh`. Settings > Build:
 
 | Setting | Value |
 | --- | --- |
+| Git repository | `jat001/subconverter-rs` |
+| Branch control | production branch `main`; builds for other branches are disabled (if enabled, give them `pnpm exec wrangler versions upload --config dist/server/wrangler.json` as the deploy command) |
 | Root directory | `www` |
 | Build command | `bash ../scripts/workers-build.sh` |
 | Deploy command | `pnpm exec wrangler deploy --config dist/server/wrangler.json` |
-| Non-production branch deploy command | `pnpm exec wrangler versions upload --config dist/server/wrangler.json` (only if branch builds are enabled) |
 | Build watch paths | include `*` (the default), so changes anywhere in the repository rebuild |
-| Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12.8.2` |
+| Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12` |
 | Build cache | enabled |
 
 Workers Builds caches the pnpm store and the `.next/cache` directory of Next.js projects only, so the

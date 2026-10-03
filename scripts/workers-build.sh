@@ -2,14 +2,9 @@
 # Full from-source build of www for Cloudflare Workers Builds: Rust -> WASM package -> vinext Worker.
 # Every push builds everything (build watch paths include everything), nothing comes from a release.
 #
-# Worker settings (Settings > Build):
-#   Root directory:   www
-#   Build command:    bash ../scripts/workers-build.sh
-#   Deploy command:   pnpm exec wrangler deploy --config dist/server/wrangler.json
-#   Non-production branch deploy command (only if branch builds are enabled):
-#                     pnpm exec wrangler versions upload --config dist/server/wrangler.json
-#   Build variables:  SKIP_DEPENDENCY_INSTALL=1 (www can only be installed once ../pkg is built)
-#                     PNPM_VERSION=12.8.2
+# The Worker's build settings (root directory www, this script as the build command, the deploy command,
+# SKIP_DEPENDENCY_INSTALL and PNPM_VERSION) only exist in the dashboard; www/README.md lists them under
+# Workers Builds.
 #
 # Workers Builds caches only package manager stores and the output directories of frameworks it
 # detects, so the Rust toolchain, the cargo registry, the build artifacts and wasm-pack's tools are
