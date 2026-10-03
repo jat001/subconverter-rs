@@ -41,7 +41,8 @@ pnpm run start:vinext                        # run that build locally in workerd
 # Cloudflare Workers Builds (Git integration, root directory www) runs scripts/workers-build.sh: a full from-source
 # build on every push, with the Rust toolchain/registry/target cached in www/.next/cache (see www/README.md)
 # Vercel builds every push on its Linux machines too: www/vercel.json runs scripts/vercel-install.sh (WASM from
-# source, then pnpm install) before `next build`; both platform scripts share scripts/ci-toolchain.sh
+# source, then pnpm install) before `next build`; Netlify (base dir = repo root, package dir = www) runs
+# scripts/netlify-build.sh; all three platform scripts share scripts/ci-toolchain.sh
 ```
 
 Optional cargo feature `js-runtime` (rquickjs, non-wasm only) enables JS scripting support; CI release builds use `--features=web-api,js-runtime`.

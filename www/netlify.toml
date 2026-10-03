@@ -1,3 +1,6 @@
+# Netlify site settings: base directory unset (repository root), package directory `www`.
+# The build command runs from the repository root, see scripts/netlify-build.sh for why.
 [build]
-command = "pnpm build"
+command = "bash scripts/netlify-build.sh"
+# Resolved against the package directory: www/.next
 publish = ".next"

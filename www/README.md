@@ -76,6 +76,13 @@ anonymous rate limit is easily exhausted from shared egress IPs such as Cloudfla
 Both build with `next build` (`netlify.toml`, `vercel.json`). Set `ADMIN_TOKEN` in the site's environment
 variables.
 
+On Netlify, set the base directory to the repository root (leave it empty) and the package directory to
+`www`. `netlify.toml` then runs `scripts/netlify-build.sh` from the repository root, which builds the
+WASM package from source (Rust, release profile, Node target only), installs www and runs `next build`.
+The root has no lockfile, so Netlify does not attempt its own `pnpm install` of www before the package
+exists, and it has a `Cargo.lock`, so Netlify caches the Rust toolchain, `~/.cargo/registry` and
+`target/` itself.
+
 ```bash
 pnpm deploy:netlify
 ```
