@@ -12,7 +12,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cache="$repo_root/www/.next/cache/vercel-build"
-export RUSTUP_HOME="$HOME/.rustup"
+CI_RUSTUP_HOME="$HOME/.rustup"
 
 # Build scripts and proc macros of Rust dependencies are linked with the system C compiler
 if ! command -v cc >/dev/null; then

@@ -2,16 +2,17 @@
 # on a Linux build machine: rustup with the wasm32 target, wasm-pack, a wasm-bindgen matching Cargo.lock
 # and jq. Everything is kept under $cache so the platform's build cache can carry it to the next build.
 #
-# Expects `repo_root` and `cache`. RUSTUP_HOME may be set beforehand to keep the toolchain (~700 MB, the
-# largest part) outside the cache. Call ci_toolchain_cleanup after building.
+# Expects `repo_root` and `cache`. CI_RUSTUP_HOME, CI_CARGO_HOME and CI_TARGET_DIR may be set beforehand to
+# put the toolchain (~700 MB, the largest part), cargo's home or the build artifacts somewhere else than
+# $cache, e.g. where the platform caches them itself. Call ci_toolchain_cleanup after building.
 
 WASM_PACK_VERSION=0.15.0
 JQ_VERSION=1.8.2
 
 bin="$cache/bin"
-export RUSTUP_HOME="${RUSTUP_HOME:-$cache/rustup}"
-export CARGO_HOME="$cache/cargo"
-export CARGO_TARGET_DIR="$cache/target"
+export RUSTUP_HOME="${CI_RUSTUP_HOME:-$cache/rustup}"
+export CARGO_HOME="${CI_CARGO_HOME:-$cache/cargo}"
+export CARGO_TARGET_DIR="${CI_TARGET_DIR:-$cache/target}"
 export WASM_PACK_CACHE="$cache/wasm-pack"
 export PATH="$bin:$CARGO_HOME/bin:$PATH"
 # wasm-pack downloads missing tools into WASM_PACK_CACHE but does not create it
