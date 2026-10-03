@@ -94,7 +94,10 @@ build_workers_pkg() {
   wasm-pack build "$mode" --target web --out-dir pkg/workers --no-pack
   # wasm-pack writes a `*` .gitignore, which would make npm drop the whole directory when publishing
   rm -f pkg/workers/.gitignore
-  cp wasm-host/workers/* pkg/workers/
+  # Merged into pkg/workers/: the entry files, plus snippets/package.json, which marks the copied host
+  # bindings (compiled as CommonJS for the nodejs build) as CommonJS inside this "type": "module" package;
+  # spec-following bundlers such as esbuild (wrangler) otherwise treat them as ESM and `exports` is undefined
+  cp -r wasm-host/workers/. pkg/workers/
 }
 
 # Parse arguments

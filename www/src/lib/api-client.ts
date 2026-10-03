@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { FileAttributes } from '@jat/subconverter-wasm';
+import type { FileAttributes } from '@jat/subconverter-wasm';
 import { adminFetch } from './admin-token';
 
 /**

@@ -103,7 +103,8 @@ jobs:
           wasm-pack build --release --target web --out-dir pkg/workers --no-pack
           # wasm-pack writes a `*` .gitignore, which would make npm drop the whole directory when publishing
           rm -f pkg/workers/.gitignore
-          cp wasm-host/workers/* pkg/workers/
+          # Merged in, including snippets/package.json, which marks the CommonJS host bindings as such
+          cp -r wasm-host/workers/. pkg/workers/
 
       # Runtime dependencies of the wasm-host bindings are declared in wasm-host/package.json
       - name: Update package.json in pkg directory

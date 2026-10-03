@@ -1,12 +1,10 @@
-'use client';
-
 import { useState, useSyncExternalStore } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from 'use-intl';
 import { getAdminTokenRequest, resolveAdminTokenRequest, subscribeAdminTokenRequest } from '@/lib/admin-token';
 
 /**
  * Asks for the admin token when an /api/admin request is rejected (see adminFetch()).
- * Mounted once in the root layout.
+ * Mounted once in App.tsx.
  */
 export default function AdminTokenDialog() {
     const t = useTranslations('AdminAuth');

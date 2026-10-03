@@ -1,6 +1,15 @@
 [build]
 command = "bash scripts/netlify-build.sh"
-publish = "www/.next"
+publish = "www/dist"
 
-[[plugins]]
-package = "@netlify/plugin-nextjs"
+[functions]
+directory = "www/netlify/functions"
+# The nodejs WASM package reads its .wasm file and host bindings from its own directory at runtime, so it
+# is copied into the function as is instead of being bundled
+external_node_modules = ["@jat/subconverter-wasm"]
+
+# The SPA's client-side routes; /api/* is the function (netlify/functions/api.mts), which takes precedence
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200

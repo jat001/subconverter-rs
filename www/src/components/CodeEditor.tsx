@@ -1,10 +1,8 @@
-"use client";
-
 import React, { useState, useEffect, useRef } from 'react';
-import { FileAttributes } from '@jat/subconverter-wasm';
+import type { FileAttributes } from '@jat/subconverter-wasm';
 import * as apiClient from '@/lib/api-client';
 import Editor, { Monaco } from '@monaco-editor/react';
-import { editor } from 'monaco-editor';
+import type { editor } from 'monaco-editor';
 
 interface CodeEditorProps {
     filePath?: string | null;
