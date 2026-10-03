@@ -184,10 +184,11 @@ and deploys the Worker. Settings > Build:
 | Setting | Value |
 | --- | --- |
 | Git repository | `jat001/subconverter-rs` |
-| Branch control | production branch `main`; other branches are not built on push, but pull requests get a preview build whose deploy step runs `wrangler preview` with the deploy command's arguments (Workers Previews, `previews` in `wrangler.jsonc`) |
+| Branch control | production branch `main` |
 | Root directory | `www` |
 | Build command | `bash ../scripts/workers-build.sh` |
 | Deploy command | `pnpm exec wrangler deploy` (also right for the former vinext setup, whose build leaves a `.wrangler/deploy/config.json` redirect to `dist/server/wrangler.json`) |
+| Preview branch builds (the Preview tab of Build) | enabled, so other branches and pull requests get preview builds; their own settings repeat the build command, root directory, watch paths and variables, with `pnpm exec wrangler preview` as the preview command (Workers Previews, `previews` in `wrangler.jsonc`) |
 | Build watch paths | include `*` (the default), so changes anywhere in the repository rebuild |
 | Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12` |
 | Build cache | enabled |
