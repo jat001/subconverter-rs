@@ -95,20 +95,14 @@ jobs:
 
       - name: Typecheck
         working-directory: www
-        run: |
-          pnpm exec next typegen
-          pnpm exec tsc --noEmit
+        run: pnpm exec tsc --noEmit
 
+      # The same SPA build is deployed everywhere; the dry run checks that wrangler can bundle the Worker
       - name: Build
         working-directory: www
-        run: pnpm build
-
-      # Cloudflare Workers build via vinext; the dry run checks that wrangler can bundle the Worker
-      - name: Build for Cloudflare Workers
-        working-directory: www
         run: |
-          pnpm run build:vinext
-          pnpm exec wrangler deploy --dry-run --config dist/server/wrangler.json
+          pnpm build
+          pnpm exec wrangler deploy --dry-run
 
   wasm-host:
     name: wasm-host tests

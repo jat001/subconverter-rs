@@ -1,14 +1,15 @@
 #!/bin/bash
-# Full from-source build of www for Cloudflare Workers Builds: Rust -> WASM package -> vinext Worker.
-# Every push builds everything (build watch paths include everything), nothing comes from a release.
+# Full from-source build of www for Cloudflare Workers Builds: Rust -> WASM package -> SPA; the deploy
+# command (`wrangler deploy`) then bundles the API Worker. Every push builds everything (build watch
+# paths include everything), nothing comes from a release.
 #
 # The Worker's build settings (root directory www, this script as the build command, the deploy command,
 # SKIP_DEPENDENCY_INSTALL and PNPM_VERSION) only exist in the dashboard; www/README.md lists them under
 # Workers Builds.
 #
-# Workers Builds caches only package manager stores and the output directories of frameworks it
-# detects, so the Rust toolchain, the cargo registry, the build artifacts and wasm-pack's tools are
-# kept in www/.next/cache, the directory it saves for Next.js projects. Without that cache the
+# Workers Builds caches the package manager store, plus output directories of the frameworks it detects,
+# none of which applies to a Vite SPA. The Rust toolchain, the cargo registry, the build artifacts and
+# wasm-pack's tools are therefore kept inside the cached pnpm store directory. Without that cache the
 # build still works, it just starts from scratch.
 set -euo pipefail
 
@@ -16,7 +17,7 @@ set -euo pipefail
 BINARYEN_VERSION=version_117
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-cache="$repo_root/www/.next/cache/workers-build"
+cache="$HOME/.local/share/pnpm/store/subconverter-workers-build"
 # shellcheck source=ci-toolchain.sh
 source "$repo_root/scripts/ci-toolchain.sh"
 
@@ -39,4 +40,4 @@ cd "$repo_root"
 ci_toolchain_cleanup
 
 cd www
-pnpm run build:vinext
+pnpm run build

@@ -1,28 +1,12 @@
-'use client';
-
-import { startTransition, useOptimistic } from 'react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
-import { locales } from '@/i18n/config';
+import { locales, type Locale } from '@/i18n/config';
+import { useLocaleSetting } from '@/i18n/locale';
 
 export default function LanguageSwitcher() {
-    const router = useRouter();
-    // The locale the server rendered with (NEXT_LOCALE cookie, else the default locale);
-    // switches optimistically on click until the refresh applies the new locale
-    const [currentLocale, setCurrentLocale] = useOptimistic(useLocale());
+    // Switching re-renders the app with the new messages; the choice is kept in a cookie
+    const { locale: currentLocale, setLocale } = useLocaleSetting();
 
-    const handleLanguageChange = (newLocale: string) => {
-        // Set a cookie with the new locale
-        // eslint-disable-next-line react-hooks/immutability -- writing document.cookie in an event handler is the intended side effect
-        document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
-
-        startTransition(() => {
-            // Update state
-            setCurrentLocale(newLocale);
-
-            // Reload the page to apply the new language
-            router.refresh();
-        });
+    const handleLanguageChange = (newLocale: Locale) => {
+        setLocale(newLocale);
     };
 
     // Language names in their native language - keep these hardcoded
