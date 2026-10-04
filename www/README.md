@@ -1,13 +1,24 @@
 # Subconverter Web UI
 
-A modern web UI for the subconverter-rs project, deployable to Vercel with a single click. This project allows you to convert proxy subscriptions to various formats and create shareable links with custom configurations.
+A modern web UI for the subconverter-rs project. This project allows you to convert proxy subscriptions to
+various formats and create shareable links with custom configurations.
 
 ## Features
 
 - Convert proxy subscriptions to different formats (Clash, Surge, Quantumult X, etc.)
 - Create and save custom configurations
 - Generate shareable short links for your configs
-- Modern, responsive UI built with Next.js and Tailwind CSS
+- A React single-page app (Vite, Tailwind CSS) with an API on [Hono](https://hono.dev), deployable
+  to Cloudflare Workers, Vercel and Netlify from the same build
+
+## Structure
+
+- `src/`: the SPA (React, react-router, use-intl). `vite build` emits it as static files into `dist/`,
+  which every platform serves from its CDN, so page views never invoke a function.
+- `server/`: the API (`/api/*`), one Hono app on the web standard `Request`/`Response`
+  (`server/app.ts`, handlers in `server/routes/`), which runs the subconverter WASM package.
+- Platform entries, a few lines each: `server/worker.ts` (Cloudflare Workers), `api/index.ts` (Vercel
+  Function) and `netlify/functions/api.mts` (Netlify Function).
 
 ## Development
 
@@ -39,13 +50,14 @@ cd www
 pnpm install
 ```
 
-4. Run the development server:
+4. Run the development server, which serves the SPA and runs the API in Node through
+   `@hono/vite-dev-server`:
 
 ```bash
 pnpm dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### Build for Production
 
@@ -62,7 +74,7 @@ The admin API (`/api/admin/*`, used by the admin, settings and rules pages) and 
 require the `ADMIN_TOKEN` environment variable on every platform. Without it they answer `503`. The
 browser asks for the token the first time a page needs it and keeps it in localStorage.
 
-For local development put it in `www/.env.local`, which `next dev`, vinext and wrangler all read:
+For local development put it in `www/.env.local`, which `vite dev` and wrangler both read:
 
 ```bash
 ADMIN_TOKEN=<a long random string>
@@ -76,11 +88,13 @@ the platform's default.
 
 ### Netlify
 
-`netlify.toml` sets the build command, the publish directory and the Next.js adapter. The build command
-runs `scripts/netlify-build.sh` from the repository root, which builds the WASM package from source
-(Rust, release profile, Node target only), installs www and runs `next build`. The root has no lockfile,
-so Netlify does not attempt its own `pnpm install` of www before the package exists, and it has a
-`Cargo.lock`, so Netlify caches the Rust toolchain, `~/.cargo/registry` and `target/` itself.
+`netlify.toml` sets the build command, the publish directory (`www/dist`), the functions directory and
+the SPA fallback. The build command runs `scripts/netlify-build.sh` from the repository root, which builds
+the WASM package from source (Rust, release profile, Node target only), installs www and runs
+`vite build`; Netlify then bundles `netlify/functions/api.mts`, copying the WASM package in as is
+(`external_node_modules`). The root has no lockfile, so Netlify does not attempt its own `pnpm install`
+of www before the package exists, and it has a `Cargo.lock`, so Netlify caches the Rust toolchain,
+`~/.cargo/registry` and `target/` itself.
 
 Dashboard settings (Project configuration):
 
@@ -95,28 +109,25 @@ Dashboard settings (Project configuration):
 | Build image | Ubuntu Noble 24.04, whose rustup and Corepack the build script relies on |
 | Node.js | 24.x (www requires 24 or later) |
 | Visitor access | Netlify Team Login for non-production deploys (also the team's default): unpublished deploys and their URLs need a Netlify login, the published deploy is public |
-| Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`, with the Functions scope (route handlers run as functions) and values for the Branch deploys and Production contexts; the Deploy Previews value is left empty, which turns the admin API off there. Netlify Blobs needs no configuration |
+| Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`, with the Functions scope (the API runs as a function) and values for the Branch deploys and Production contexts; the Deploy Previews value is left empty, which turns the admin API off there. Netlify Blobs needs no configuration |
 
 Production deploys consume credits while branch deploys and Deploy Previews are free, so nothing deploys
 to production automatically: every push builds a branch deploy, and a finished deploy of `main` goes live
 through Publish deploy on its deploy page. The published deploy is still a branch deploy, so it uses the
 Branch deploys values of environment variables. Changed variables only apply to deploys built afterwards.
 
-```bash
-pnpm deploy:netlify
-```
-
 ### Vercel
 
 The Git integration builds every push from source on Vercel's Linux build machines: `vercel.json` runs
 `scripts/vercel-install.sh` as the install command, which builds the WASM package (Rust, release
-profile, Node target only) before installing www, and `next build` runs as usual. Prefer that over
-`vercel build` / `vercel deploy --prebuilt` from Windows, where the current Vercel CLI stores symlink
-targets verbatim (absolute junction paths, backslashes) and misses build traces
+profile, Node target only) before installing www, then `vite build`, and deploys `api/index.ts` as the
+function that a rewrite sends every `/api/*` request to. Prefer that over `vercel build` /
+`vercel deploy --prebuilt` from Windows, where the current Vercel CLI stores symlink targets verbatim
+(absolute junction paths, backslashes) and misses build traces
 ([vercel/vercel#17631](https://github.com/vercel/vercel/pull/17631),
-[vercel/vercel#17632](https://github.com/vercel/vercel/pull/17632)). Vercel's build cache only covers
-`node_modules` and `.next/cache` (1 GB in all), so the script keeps the cargo registry, build artifacts and
-WASM tools in `www/.next/cache` and installs the Rust toolchain on every build.
+[vercel/vercel#17632](https://github.com/vercel/vercel/pull/17632)). With the Vite framework preset
+Vercel's build cache only covers `node_modules` (1 GB), so the script keeps the cargo registry, build
+artifacts and WASM tools in `www/node_modules/.cache` and installs the Rust toolchain on every build.
 
 Dashboard settings (project Settings). The framework preset, install and build commands show up there
 too; `vercel.json` overrides them, so keep the two the same:
@@ -132,11 +143,12 @@ too; `vercel.json` overrides them, so keep the two the same:
 
 ### Cloudflare Workers
 
-Workers run the app through [vinext](https://github.com/cloudflare/vinext) instead of `next build`; the
-Worker and its `KV` binding are configured in `wrangler.jsonc`. Deploy a release-profile WASM build: a
-development build uses about 2 s of CPU per conversion and runs into the Workers CPU time limit.
-`--optimize` builds one without changing versions, and runs wasm-opt on the Workers package (a quarter
-smaller, slightly faster startup):
+`wrangler.jsonc` deploys `dist/` as static assets and `server/worker.ts` as the Worker, which only receives
+`/api/*` (`run_worker_first`); every other path is a file or falls back to `index.html`, so page views
+use no Worker CPU time. wrangler bundles the Worker with the Workers build of the WASM package. Deploy a
+release-profile WASM build: a development build uses about 2 s of CPU per conversion and runs into the
+Workers CPU time limit. `--optimize` builds one without changing versions, and runs wasm-opt on the
+Workers package (a quarter smaller, slightly faster startup):
 
 ```bash
 # from the repository root
@@ -146,9 +158,9 @@ smaller, slightly faster startup):
 Then, in `www/`:
 
 ```bash
-pnpm run build:vinext
-pnpm run start:vinext                    # try the built Worker locally in workerd
-pnpm run deploy:vinext
+pnpm build
+pnpm run start:workers                   # try the Worker locally in workerd
+pnpm run deploy:workers
 pnpm exec wrangler secret put ADMIN_TOKEN
 ```
 
@@ -166,7 +178,8 @@ dashboard alone.
 #### Workers Builds
 
 With the repository connected in the Worker's Git integration, every push builds everything from source
-(Rust, the WASM package, the Worker) through `scripts/workers-build.sh`. Settings > Build:
+(Rust, the WASM package, the SPA) through `scripts/workers-build.sh`, and the deploy command bundles
+and deploys the Worker. Settings > Build:
 
 | Setting | Value |
 | --- | --- |
@@ -174,16 +187,16 @@ With the repository connected in the Worker's Git integration, every push builds
 | Branch control | production branch `main` |
 | Root directory | `www` |
 | Build command | `bash ../scripts/workers-build.sh` |
-| Deploy command | `pnpm exec wrangler deploy`: the vinext build leaves a `.wrangler/deploy/config.json` redirect to `dist/server/wrangler.json`, which wrangler follows without `--config` |
+| Deploy command | `pnpm exec wrangler deploy` (also right for the former vinext setup, whose build leaves a `.wrangler/deploy/config.json` redirect to `dist/server/wrangler.json`) |
 | Preview branch builds (the Preview tab of Build) | enabled, so other branches and pull requests get preview builds; their own settings repeat the build command, root directory, watch paths and variables, with `pnpm exec wrangler preview` as the preview command (Workers Previews, `previews` in `wrangler.jsonc`) |
 | Build watch paths | include `*` (the default), so changes anywhere in the repository rebuild |
 | Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12` |
 | Build cache | enabled |
 
-Workers Builds caches the pnpm store and the `.next/cache` directory of Next.js projects only, so the
-script keeps the Rust toolchain, cargo registry, build artifacts and wasm-pack's tools in
-`www/.next/cache` to reuse them between builds. wasm-opt runs through `scripts/wasm-opt-cache.sh`,
-which reuses the previous output when the Rust code did not change.
+Workers Builds caches the pnpm store plus the output directories of frameworks it detects, none of
+which applies to a Vite SPA, so the script keeps the Rust toolchain, cargo registry, build artifacts and
+wasm-pack's tools inside the cached pnpm store directory to reuse them between builds. wasm-opt runs
+through `scripts/wasm-opt-cache.sh`, which reuses the previous output when the Rust code did not change.
 
 ## License
 

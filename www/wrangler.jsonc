@@ -2,15 +2,18 @@
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
 
   "name": "subconverter-rs",
-  "main": "vinext/server/fetch-handler",
+  "main": "server/worker.ts",
   "compatibility_date": "2026-10-01",
 
   "workers_dev": true,
   "preview_urls": true,
 
+  // The SPA from `vite build`. Only /api/* reaches the Worker; other paths are files or fall back to
+  // index.html, so page views cost no Worker CPU time
   "assets": {
-    "directory": "dist/client",
-    "binding": "ASSETS",
+    "directory": "dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
   },
 
   "cache": {
