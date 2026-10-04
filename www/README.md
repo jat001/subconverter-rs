@@ -103,7 +103,7 @@ Dashboard settings (Project configuration):
 | Base directory | empty (the repository root) |
 | Package directory | `www`, where Netlify reads `netlify.toml` |
 | Build command, publish and functions directories | empty, `netlify.toml` provides them |
-| Runtime | not set: the choices are Netlify's adapter plugins for Next.js, Angular and Gatsby, which a Vite SPA with a function does not use |
+| Runtime | not set. The menu installs one of Netlify's own framework adapters as a build plugin (`@netlify/plugin-nextjs`, `@netlify/angular-runtime`, `@netlify/plugin-gatsby`); these are the only frameworks for which Netlify's framework detection adds a plugin, while other frameworks write Netlify's Frameworks API output (`.netlify/v1/`) themselves. A Vite SPA needs none, and with Next.js selected every build fails because `www/dist` has no Next.js build output |
 | Production branch | `null`, a branch that does not exist, so no build deploys to production by itself |
 | Branch deploys | all branches |
 | Deploy Previews | pull requests against the production branch or a branch deploy branch |
