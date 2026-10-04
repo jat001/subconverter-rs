@@ -103,6 +103,7 @@ Dashboard settings (Project configuration):
 | Base directory | empty (the repository root) |
 | Package directory | `www`, where Netlify reads `netlify.toml` |
 | Build command, publish and functions directories | empty, `netlify.toml` provides them |
+| Runtime | not set: the choices are Netlify's adapter plugins for Next.js, Angular and Gatsby, which a Vite SPA with a function does not use |
 | Production branch | `null`, a branch that does not exist, so no build deploys to production by itself |
 | Branch deploys | all branches |
 | Deploy Previews | pull requests against the production branch or a branch deploy branch |
