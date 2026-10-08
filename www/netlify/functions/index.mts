@@ -1,4 +1,4 @@
-// Netlify Function (Functions v2, Node.js runtime), registered for /api/* through `config.path`. The SPA is
+// Netlify platform entry (Functions v2, Node.js), registered for /api/* through `config.path`. The SPA is
 // the publish directory, served from Netlify's CDN.
 import app from '../../server/app.js';
 

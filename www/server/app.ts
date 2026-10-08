@@ -1,6 +1,6 @@
 // The API (/api/*) as one Hono app built on the web standard Request/Response, so every platform runs the
-// same code: Cloudflare Workers (server/worker.ts), Vercel (api/index.ts), Netlify
-// (netlify/functions/api.mts) and the Vite dev server (vite.config.ts). The frontend is a static SPA that
+// same code: Cloudflare Workers (worker/index.ts), Vercel (vercel/index.ts), Netlify
+// (netlify/functions/index.mts) and the Vite dev server (vite.config.ts). The frontend is a static SPA that
 // each platform serves from its CDN, so only API requests reach this app.
 import { Hono, type Context } from 'hono';
 import * as adminDownloads from './routes/admin-downloads.js';

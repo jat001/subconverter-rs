@@ -6,7 +6,7 @@ import { defineConfig, loadEnv } from 'vite';
 import { staticPages } from './build/static-pages.ts';
 
 // One build for every platform: `vite build` emits the static SPA into dist/, and each platform runs the
-// API (server/app.ts) through its own entry (server/worker.ts, api/index.ts, netlify/functions/api.mts).
+// API (server/app.ts) through its own entry (worker/index.ts, vercel/index.ts, netlify/functions/index.mts).
 export default defineConfig(({ mode }) => {
   // The dev server runs the API in Node; give it the variables from .env files (ADMIN_TOKEN,
   // GITHUB_TOKEN, ...) the way the platforms provide their environment variables

@@ -18,7 +18,7 @@
       "@/*": ["./src/*"]
     }
   },
-  // src/ is the SPA; server/ is the API and api/, netlify/ are its platform entries
-  "include": ["src", "server", "api", "netlify", "build", "tests", "page-routes.ts", "vite.config.ts"],
+  // src/ is the SPA; server/ is shared API logic; worker/, vercel/, netlify/ are platform entries.
+  "include": ["src", "server", "worker", "vercel", "netlify", "build", "tests", "page-routes.ts", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

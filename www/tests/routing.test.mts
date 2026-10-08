@@ -74,7 +74,7 @@ for (const mode of ['dev', 'preview'] as const) {
             assert.match(api.headers.get('Content-Type') ?? '', /application\/json/);
             assert.match((await api.json()).error, /Not found/);
 
-            const { default: worker } = await (server as Awaited<ReturnType<typeof createServer>>).ssrLoadModule('/server/worker.ts');
+            const { default: worker } = await (server as Awaited<ReturnType<typeof createServer>>).ssrLoadModule('/worker/index.ts');
             const fetched: string[] = [];
             const env = { ASSETS: { fetch: async (input: URL) => {
                 fetched.push(String(input));
@@ -95,3 +95,35 @@ for (const mode of ['dev', 'preview'] as const) {
         }
     });
 }
+
+test('platform entries preserve URL, method, headers and request body', async (t) => {
+    const server = await createServer({ server: { middlewareMode: true }, logLevel: 'error' });
+    t.after(() => server.close());
+    const { default: app } = await server.ssrLoadModule('/server/app.ts');
+    // A test-only endpoint verifies delegation without depending on external services or writing KV.
+    app.post('/api/platform-entry-probe', async (c: any) => c.json({
+        path: c.req.path,
+        query: c.req.query('probe'),
+        header: c.req.header('x-entry-probe'),
+        body: await c.req.json(),
+    }));
+    const { default: worker } = await server.ssrLoadModule('/worker/index.ts');
+    const { default: vercel } = await server.ssrLoadModule('/vercel/index.ts');
+    const { default: netlify, config } = await server.ssrLoadModule('/netlify/functions/index.mts');
+    assert.equal(config.path, '/api/*');
+    for (const entry of [vercel, netlify, (request: Request) => worker.fetch(request, {})]) {
+        const request = new Request('https://example.com/api/platform-entry-probe?probe=original', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-entry-probe': 'preserved' },
+            body: JSON.stringify({ hello: 'world' }),
+        });
+        const response = await entry(request);
+        assert.equal(response.status, 200);
+        assert.deepEqual(await response.json(), {
+            path: '/api/platform-entry-probe', query: 'original', header: 'preserved', body: { hello: 'world' },
+        });
+        const missing = await entry(new Request('https://example.com/api/no-such-entry'));
+        assert.equal(missing.status, 404);
+        assert.match(missing.headers.get('Content-Type') ?? '', /application\/json/);
+    }
+});

@@ -102,7 +102,7 @@ jobs:
         working-directory: www
         run: |
           pnpm build
-          pnpm exec wrangler deploy --dry-run
+          pnpx wrangler deploy --dry-run
 
       - name: Test page routing and HTTP 404
         working-directory: www

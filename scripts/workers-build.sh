@@ -1,6 +1,6 @@
 #!/bin/bash
 # Full from-source build of www for Cloudflare Workers Builds: Rust -> WASM package -> SPA; the deploy
-# command (`wrangler deploy`) then bundles the API Worker. Every push builds everything (build watch
+# command (`pnpx wrangler deploy`) then bundles the API Worker. Every push builds everything (build watch
 # paths include everything), nothing comes from a release.
 #
 # The Worker's build settings (root directory www, this script as the build command, the deploy command,

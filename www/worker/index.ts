@@ -1,6 +1,6 @@
 // Ordinary pages stay on the static host. Explicit 404 URLs must run here, because 404.html is also
 // a real asset and would otherwise be served with status 200.
-import app from './app.js';
+import app from '../server/app.js';
 import { isNotFoundPath } from '../page-routes';
 
 interface Env {

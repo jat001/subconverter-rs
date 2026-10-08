@@ -9,7 +9,7 @@ directory = "www/netlify/functions"
 external_node_modules = ["@jat/subconverter-wasm"]
 
 # Known pages have static directory index files. Netlify serves 404.html for missing paths;
-# /api/* is still handled by the function (netlify/functions/api.mts).
+# /api/* is still handled by the function (netlify/functions/index.mts).
 
 [build.processing.html]
 pretty_urls = true

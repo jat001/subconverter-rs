@@ -7,8 +7,11 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "proxy": {
+    "entrypoint": "vercel/index.ts",
+    "matcher": "/api/:path*"
+  },
   "routes": [
-    { "src": "^/404$", "methods": ["GET", "HEAD"], "status": 404 },
-    { "src": "^/api/(.*)$", "dest": "/api" }
+    { "src": "^/404$", "methods": ["GET", "HEAD"], "status": 404 }
   ]
 }

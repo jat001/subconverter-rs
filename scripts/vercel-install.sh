@@ -1,9 +1,9 @@
 #!/bin/bash
 # Install step of the Vercel build (installCommand in www/vercel.json, run in www): builds the WASM package
 # from source on Vercel's Linux build machine, then installs www, which depends on it (file:../pkg).
-# The build command then runs `vite build` for the SPA, and Vercel deploys api/index.ts as the function.
+# The build command runs `vite build`; Vercel deploys vercel/index.ts as Node.js Routing Middleware.
 # Building on Linux also keeps the Windows-only Vercel CLI problems (symlink targets, build trace
-# lookups) out of the way, as nothing is built or uploaded from Windows.
+# lookups) out of the way, as no Windows-built artifacts are uploaded.
 #
 # With the Vite framework preset Vercel restores only node_modules between builds (at most 1 GB, most of
 # it www's node_modules), so the cargo registry, the build artifacts and the WASM tools are kept in
