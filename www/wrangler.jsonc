@@ -8,12 +8,14 @@
   "workers_dev": true,
   "preview_urls": true,
 
-  // The SPA from `vite build`. Only /api/* reaches the Worker; other paths are files or fall back to
-  // index.html, so page views cost no Worker CPU time
+  // Known pages have static directory indexes; missing paths serve 404.html with status 404.
+  // Only API requests and explicit 404 URLs run the Worker; ordinary page views stay on the CDN.
   "assets": {
     "directory": "dist",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"],
+    "binding": "ASSETS",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*", "/404", "/404.html", "/404/", "/404.html/"],
   },
 
   "cache": {

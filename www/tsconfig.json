@@ -5,6 +5,7 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -18,6 +19,6 @@
     }
   },
   // src/ is the SPA; server/ is the API and api/, netlify/ are its platform entries
-  "include": ["src", "server", "api", "netlify", "vite.config.ts"],
+  "include": ["src", "server", "api", "netlify", "build", "tests", "page-routes.ts", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -4,6 +4,11 @@
         "description": "Advanced proxy subscription converter and formatter",
         "update_failed": "Update failed"
     },
+    "NotFoundPage": {
+        "title": "Page not found",
+        "description": "The page you requested does not exist. Check the address or return to the home page.",
+        "backToHome": "Back to Home"
+    },
     "HomePage": {
         "title": "Subconverter-RS Web Interface",
         "quickConvert": "Quick Conversion",

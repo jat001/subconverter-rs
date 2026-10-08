@@ -8,8 +8,21 @@ directory = "www/netlify/functions"
 # is copied into the function as is instead of being bundled
 external_node_modules = ["@jat/subconverter-wasm"]
 
-# The SPA's client-side routes; /api/* is the function (netlify/functions/api.mts), which takes precedence
+# Known pages have static directory index files. Netlify serves 404.html for missing paths;
+# /api/* is still handled by the function (netlify/functions/api.mts).
+
+[build.processing.html]
+pretty_urls = true
+
+# Force is necessary: the existing 404.html asset would otherwise shadow these status rewrites.
 [[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
+from = "/404"
+to = "/404.html"
+status = 404
+force = true
+
+[[redirects]]
+from = "/404.html"
+to = "/404.html"
+status = 404
+force = true

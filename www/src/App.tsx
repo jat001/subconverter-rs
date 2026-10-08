@@ -1,26 +1,38 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Link, Route, Routes } from 'react-router';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router';
 import AdminTokenDialog from '@/components/AdminTokenDialog';
 import AppInitializer from '@/components/AppInitializer';
 import { I18nProvider } from '@/i18n/locale';
+import NotFoundPage from '@/pages/NotFoundPage';
+import { isPagePath, PAGE_PATHS, type PagePath } from '../page-routes';
 
 // Each page is its own chunk, so the Monaco-based pages only load when visited
-const HomePage = lazy(() => import('@/pages/HomePage'));
-const AdminPage = lazy(() => import('@/pages/AdminPage'));
-const AdminRulesPage = lazy(() => import('@/pages/AdminRulesPage'));
-const ConfigPage = lazy(() => import('@/pages/ConfigPage'));
-const ConvertPage = lazy(() => import('@/pages/ConvertPage'));
-const DownloadsPage = lazy(() => import('@/pages/DownloadsPage'));
-const LinksPage = lazy(() => import('@/pages/LinksPage'));
-const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
-const StartupPage = lazy(() => import('@/pages/StartupPage'));
+const PAGES = {
+    '/': lazy(() => import('@/pages/HomePage')),
+    '/admin': lazy(() => import('@/pages/AdminPage')),
+    '/admin/rules': lazy(() => import('@/pages/AdminRulesPage')),
+    '/config': lazy(() => import('@/pages/ConfigPage')),
+    '/convert': lazy(() => import('@/pages/ConvertPage')),
+    '/downloads': lazy(() => import('@/pages/DownloadsPage')),
+    '/links': lazy(() => import('@/pages/LinksPage')),
+    '/settings': lazy(() => import('@/pages/SettingsPage')),
+    '/startup': lazy(() => import('@/pages/StartupPage')),
+} satisfies Record<PagePath, unknown>;
 
-function NotFound() {
+function PageRoutes() {
+    const { pathname } = useLocation();
+    // React Router accepts extra trailing slashes; the static hosts do not. Keep the same exact
+    // supported paths on both sides so an HTTP 404 cannot turn into a page or a startup redirect.
+    if (!isPagePath(pathname)) return <NotFoundPage />;
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-900 text-white">
-            <h1 className="text-2xl font-bold">404</h1>
-            <Link to="/" className="text-blue-400 hover:underline">/</Link>
-        </div>
+        <Routes>
+            {PAGE_PATHS.map((path) => {
+                const Page = PAGES[path];
+                return <Route key={path} path={path} caseSensitive element={<AppInitializer><Page /></AppInitializer>} />;
+            })}
+            <Route path="*" element={<NotFoundPage />} />
+        </Routes>
     );
 }
 
@@ -28,22 +40,9 @@ export default function App() {
     return (
         <BrowserRouter>
             <I18nProvider>
-                <AppInitializer>
-                    <Suspense fallback={null}>
-                        <Routes>
-                            <Route path="/" element={<HomePage />} />
-                            <Route path="/admin" element={<AdminPage />} />
-                            <Route path="/admin/rules" element={<AdminRulesPage />} />
-                            <Route path="/config" element={<ConfigPage />} />
-                            <Route path="/convert" element={<ConvertPage />} />
-                            <Route path="/downloads" element={<DownloadsPage />} />
-                            <Route path="/links" element={<LinksPage />} />
-                            <Route path="/settings" element={<SettingsPage />} />
-                            <Route path="/startup" element={<StartupPage />} />
-                            <Route path="*" element={<NotFound />} />
-                        </Routes>
-                    </Suspense>
-                </AppInitializer>
+                <Suspense fallback={null}>
+                    <PageRoutes />
+                </Suspense>
                 <AdminTokenDialog />
             </I18nProvider>
         </BrowserRouter>

@@ -38,6 +38,7 @@ pnpm rebuild:wasm:dev                        # rebuild wasm then start dev serve
 pnpm lint
 pnpm exec tsc --noEmit
 pnpm build                                   # the static SPA into dist/, the same for every platform
+pnpm test:routing                            # after build: dev/preview page, asset and HTTP 404 tests
 pnpm run start:workers                       # dist/ plus the API Worker locally in workerd (wrangler dev)
 # Cloudflare Workers Builds (Git integration, root directory www) runs scripts/workers-build.sh: a full from-source
 # build on every push, with the Rust toolchain/registry/target cached in the pnpm store (see www/README.md)
@@ -73,7 +74,19 @@ The conversion pipeline is **parse → transform → generate**, orchestrated in
 - `src/settings/` — global `Settings` singleton (`Settings::current()`); loads `pref.toml` → `pref.yml` → `pref.ini` in that priority order. `external/` handles the `&config=` external configs.
 - `src/template/` — minijinja-based template rendering for base configs.
 - `base/` — runtime data, not code: example prefs, base config templates, rules, snippets. The server reads these at runtime.
-- `www/` — web app, deployed identically to Cloudflare Workers, Vercel and Netlify. `src/` is a React SPA (Vite, react-router, use-intl, Tailwind 4) that `vite build` emits as static files, served from each platform's CDN. `server/` is the API: one Hono app on the web standard `Request`/`Response` (`server/app.ts` mounts the handlers in `server/routes/`, which call `@jat/subconverter-wasm`), run through a few lines of platform entry — `server/worker.ts` (Workers; `wrangler.jsonc` hands only `/api/*` to it via `run_worker_first`, with the `KV` binding), `api/index.ts` (Vercel Function behind a `vercel.json` rewrite) and `netlify/functions/api.mts` (Netlify Function on `/api/*`). Keep platform specifics in those entries and configs, not in `server/`. `/api/admin/*` and short URL management (`/api/s` except the public `GET /api/s/[id]` redirect) require `Authorization: Bearer $ADMIN_TOKEN` (`www/server/admin-auth.ts`, a guard at the top of each handler; they are disabled when the variable is unset), and the browser side goes through `adminFetch()` in `www/src/lib/admin-token.ts`. API responses default to `Cache-Control: no-store` (middleware in `server/app.ts`) so neither CDNs nor Workers Cache store them; a handler sets its own header to allow caching.
+- `www/` — web app, deployed identically to Cloudflare Workers, Vercel and Netlify. `src/` is a React SPA (Vite, react-router, use-intl, Tailwind 4) that `vite build` emits as static files, served from each platform's CDN. `server/` is the API: one Hono app on the web standard `Request`/`Response` (`server/app.ts` mounts the handlers in `server/routes/`, which call `@jat/subconverter-wasm`), run through a few lines of platform entry — `server/worker.ts` (Workers; `wrangler.jsonc` hands `/api/*` and explicit 404 URLs to it via `run_worker_first`, with `KV` and `ASSETS` bindings), `api/index.ts` (Vercel Function behind a `vercel.json` rewrite) and `netlify/functions/api.mts` (Netlify Function on `/api/*`). Keep platform specifics in those entries and configs, not in `server/`. `/api/admin/*` and short URL management (`/api/s` except the public `GET /api/s/[id]` redirect) require `Authorization: Bearer $ADMIN_TOKEN` (`www/server/admin-auth.ts`, a guard at the top of each handler; they are disabled when the variable is unset), and the browser side goes through `adminFetch()` in `www/src/lib/admin-token.ts`. API responses default to `Cache-Control: no-store` (middleware in `server/app.ts`) so neither CDNs nor Workers Cache store them; a handler sets its own header to allow caching.
+
+### Web routing
+
+The web page paths live in `www/page-routes.ts`, shared by the client router and the static build plugin
+(`www/build/static-pages.ts`). Every known path gets a directory `index.html`; `404.html` provides the
+error response for unknown paths. Keep platform routing on native static 404 handling (Workers:
+`404-page`; Vercel/Netlify: built-in `404.html`), without a catch-all rewrite to `/index.html`. The
+client's wildcard page must stay outside `AppInitializer` so bad URLs do not redirect to startup.
+Explicit `/404` and `/404.html` requests also need status overrides because the error page is a real
+static file: Workers handles them through the `ASSETS` binding (fetch `/404`, not the redirecting
+`/404.html`); Vercel uses clean URLs plus a status route; Netlify uses forced status rewrites. These
+rules follow `jat001.com`'s tested handling. Ordinary page requests still stay on the CDN.
 
 ### Dual-target constraint
 

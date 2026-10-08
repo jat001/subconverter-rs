@@ -4,6 +4,11 @@
         "description": "高级代理订阅转换和格式化工具",
         "update_failed": "更新失败"
     },
+    "NotFoundPage": {
+        "title": "页面不存在",
+        "description": "您访问的页面不存在。请检查地址是否正确，或返回首页。",
+        "backToHome": "返回首页"
+    },
     "HomePage": {
         "title": "Subconverter-RS 网页界面",
         "quickConvert": "快速转换",

@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig([
   // Build output and platform state (flat config does not read .gitignore)
-  globalIgnores(["dist/**", ".wrangler/**", ".vercel/**", ".netlify/**"]),
+  globalIgnores(["dist/**", ".next/**", ".vinext/**", ".wrangler/**", ".vercel/**", ".netlify/**"]),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   reactHooks.configs.flat.recommended,

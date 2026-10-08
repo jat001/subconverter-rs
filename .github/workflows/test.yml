@@ -104,6 +104,10 @@ jobs:
           pnpm build
           pnpm exec wrangler deploy --dry-run
 
+      - name: Test page routing and HTTP 404
+        working-directory: www
+        run: pnpm test:routing
+
   wasm-host:
     name: wasm-host tests
     runs-on: ubuntu-latest

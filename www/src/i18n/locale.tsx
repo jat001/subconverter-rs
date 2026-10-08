@@ -1,5 +1,7 @@
 import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 import { IntlProvider } from 'use-intl';
+import { useLocation } from 'react-router';
+import { isPagePath } from '../../page-routes';
 import en from '../../messages/en.json';
 import zh from '../../messages/zh.json';
 import { defaultLocale, locales, type Locale } from './config';
@@ -24,14 +26,25 @@ export function useLocaleSetting() {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
+    const { pathname } = useLocation();
     const [locale, setLocaleState] = useState(readLocale);
     const messages = MESSAGES[locale];
 
     useEffect(() => {
+        const isPage = isPagePath(pathname);
         document.documentElement.lang = locale;
-        document.title = messages.Layout.title;
+        document.title = isPage ? messages.Layout.title : `404 — ${messages.NotFoundPage.title} | ${messages.Layout.title}`;
         document.querySelector('meta[name="description"]')?.setAttribute('content', messages.Layout.description);
-    }, [locale, messages]);
+        const robots = document.querySelector('meta[name="robots"]');
+        if (isPage) {
+            robots?.remove();
+        } else if (!robots) {
+            const meta = document.createElement('meta');
+            meta.name = 'robots';
+            meta.content = 'noindex';
+            document.head.append(meta);
+        }
+    }, [locale, messages, pathname]);
 
     const setLocale = (next: Locale) => {
         document.cookie = `${COOKIE_NAME}=${next}; path=/; max-age=${60 * 60 * 24 * 365}`;

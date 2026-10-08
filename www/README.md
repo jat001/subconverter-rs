@@ -14,11 +14,27 @@ various formats and create shareable links with custom configurations.
 ## Structure
 
 - `src/`: the SPA (React, react-router, use-intl). `vite build` emits it as static files into `dist/`,
-  which every platform serves from its CDN, so page views never invoke a function.
+  which every platform serves from its CDN. Ordinary page views do not invoke a function;
+  Workers explicitly handles `/404` and `/404.html` to enforce the error status.
 - `server/`: the API (`/api/*`), one Hono app on the web standard `Request`/`Response`
   (`server/app.ts`, handlers in `server/routes/`), which runs the subconverter WASM package.
 - Platform entries, a few lines each: `server/worker.ts` (Cloudflare Workers), `api/index.ts` (Vercel
   Function) and `netlify/functions/api.mts` (Netlify Function).
+- `page-routes.ts` lists the supported page paths. The client router and the build share this list;
+  `build/static-pages.ts` emits an `index.html` for each page directory and a bilingual `404.html`.
+  Known pages can be opened or refreshed directly from the CDN. Unknown paths return HTTP 404,
+  display the localized error page, and bypass the initialization redirect. Client-side navigation
+  also displays the error page, but does not make a new document request or change its HTTP status.
+  Workers uses `assets.not_found_handling: "404-page"`; Vercel and Netlify use their built-in
+  `404.html` handling. Do not add a catch-all rewrite to `/index.html`: it would turn errors into 200s.
+  Direct requests for `/404` and `/404.html` need additional handling because `404.html` is also a
+  physical file, normally served with status 200. This follows the routing fixes in `jat001.com`:
+  Workers routes these paths through `server/worker.ts`, fetches the clean `/404` asset via `ASSETS`
+  (avoiding an HTML-normalization redirect), and overrides the status to 404; HEAD has no body.
+  Vercel uses `cleanUrls: true`, `trailingSlash: false`, and a GET/HEAD status route for `/404`, with
+  the API mapping in the same `routes` array. `/404.html` and `/404/` canonicalize to `/404` first.
+  Netlify uses forced 404 rewrites for both paths: without `force = true`, the existing file would
+  shadow the rule. Unknown paths still use the hosts' native static 404 handling.
 
 ## Development
 
@@ -63,6 +79,7 @@ pnpm dev
 
 ```bash
 pnpm build
+pnpm test:routing                            # dev/preview HTTP routing regression tests
 ```
 
 ## Deployment
@@ -89,7 +106,7 @@ the platform's default.
 ### Netlify
 
 `netlify.toml` sets the build command, the publish directory (`www/dist`), the functions directory and
-the SPA fallback. The build command runs `scripts/netlify-build.sh` from the repository root, which builds
+the static 404 handling. The build command runs `scripts/netlify-build.sh` from the repository root, which builds
 the WASM package from source (Rust, release profile, Node target only), installs www and runs
 `vite build`; Netlify then bundles `netlify/functions/api.mts`, copying the WASM package in as is
 (`external_node_modules`). The root has no lockfile, so Netlify does not attempt its own `pnpm install`
@@ -122,7 +139,7 @@ Branch deploys values of environment variables. Changed variables only apply to 
 The Git integration builds every push from source on Vercel's Linux build machines: `vercel.json` runs
 `scripts/vercel-install.sh` as the install command, which builds the WASM package (Rust, release
 profile, Node target only) before installing www, then `vite build`, and deploys `api/index.ts` as the
-function that a rewrite sends every `/api/*` request to. Prefer that over `vercel build` /
+function that a route sends every `/api/*` request to. Prefer that over `vercel build` /
 `vercel deploy --prebuilt` from Windows, where the current Vercel CLI stores symlink targets verbatim
 (absolute junction paths, backslashes) and misses build traces
 ([vercel/vercel#17631](https://github.com/vercel/vercel/pull/17631),
@@ -145,8 +162,9 @@ too; `vercel.json` overrides them, so keep the two the same:
 ### Cloudflare Workers
 
 `wrangler.jsonc` deploys `dist/` as static assets and `server/worker.ts` as the Worker, which only receives
-`/api/*` (`run_worker_first`); every other path is a file or falls back to `index.html`, so page views
-use no Worker CPU time. wrangler bundles the Worker with the Workers build of the WASM package. Deploy a
+`/api/*` and explicit 404 URLs (`run_worker_first`). Known pages are served as static files; unknown
+paths use the static `404.html` response. Ordinary page views use no Worker CPU time. wrangler bundles
+the Worker with the Workers build of the WASM package. Deploy a
 release-profile WASM build: a development build uses about 2 s of CPU per conversion and runs into the
 Workers CPU time limit. `--optimize` builds one without changing versions, and runs wasm-opt on the
 Workers package (a quarter smaller, slightly faster startup):
@@ -188,7 +206,7 @@ and deploys the Worker. Settings > Build:
 | Branch control | production branch `main` |
 | Root directory | `www` |
 | Build command | `bash ../scripts/workers-build.sh` |
-| Deploy command | `pnpm exec wrangler deploy` (also right for the former vinext setup, whose build leaves a `.wrangler/deploy/config.json` redirect to `dist/server/wrangler.json`) |
+| Deploy command | `pnpm exec wrangler deploy` |
 | Preview branch builds (the Preview tab of Build) | enabled, so other branches and pull requests get preview builds; their own settings repeat the build command, root directory, watch paths and variables, with `pnpm exec wrangler preview` as the preview command (Workers Previews, `previews` in `wrangler.jsonc`) |
 | Build watch paths | include `*` (the default), so changes anywhere in the repository rebuild |
 | Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12` |
