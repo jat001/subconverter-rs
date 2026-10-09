@@ -39,9 +39,14 @@ pnpm lint
 pnpm exec tsc --noEmit
 pnpm build                                   # the static SPA into dist/, the same for every platform
 pnpm test:routing                            # after build: dev/preview page, asset and HTTP 404 tests
-pnpm run start:workers                       # dist/ plus the API Worker locally in workerd (wrangler dev)
+netlify dev                                 # Vite plus Netlify Function/redirects/local Blobs at :8888
+vercel dev                                  # Vite plus Vercel middleware at :3000 (first link and pull)
+wrangler dev                                # dist/ plus the API Worker locally in workerd
 # Wrangler is globally installed locally; it is not a www dependency. CI and Workers Builds use
 # pnpx wrangler (pnpm's temporary CLI cache, without npm/npx).
+# Netlify dev loads .env.local; Vercel's middleware uses Development variables downloaded by pull.
+# Vercel CLI 63.1.0 on Windows loses the middleware POST body with both vite and null presets;
+# use pnpm dev / netlify dev for complete local API debugging, and validate Vercel on previews.
 # Cloudflare Workers Builds (Git integration, root directory www) runs scripts/workers-build.sh: a full from-source
 # build on every push, with the Rust toolchain/registry/target cached in the pnpm store (see www/README.md)
 # Vercel builds every push on its Linux machines too: www/vercel.json runs scripts/vercel-install.sh (WASM from

@@ -1,17 +1,26 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
 
-  "framework": "vite",
+  "framework": null,
+  "devCommand": "pnpm run dev --port $PORT",
   "installCommand": "bash ../scripts/vercel-install.sh",
   "buildCommand": "pnpm run build",
-  "outputDirectory": "dist",
+  "outputDirectory": "./dist",
+
+  "fluid": true,
   "cleanUrls": true,
   "trailingSlash": false,
+
   "proxy": {
     "entrypoint": "vercel/index.ts",
     "matcher": "/api/:path*"
   },
+
   "routes": [
-    { "src": "^/404$", "methods": ["GET", "HEAD"], "status": 404 }
+    {
+      "src": "^/404$",
+      "methods": ["GET", "HEAD"],
+      "status": 404
+    }
   ]
 }

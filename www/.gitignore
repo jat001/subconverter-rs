@@ -3,7 +3,4 @@ dist/
 next-env.d.ts
 .next/
 .vinext/
-.netlify/
-.vercel/
-.wrangler/
 .env*

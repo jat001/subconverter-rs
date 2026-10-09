@@ -1,20 +1,16 @@
+[dev]
+framework = "#custom"
+command = "pnpm run dev"
+targetPort = 5173
+autoLaunch = false
+
 [build]
 command = "bash scripts/netlify-build.sh"
 publish = "www/dist"
 
-[functions]
-directory = "www/netlify/functions"
-# The nodejs WASM package reads its .wasm file and host bindings from its own directory at runtime, so it
-# is copied into the function as is instead of being bundled
-external_node_modules = ["@jat/subconverter-wasm"]
-
-# Known pages have static directory index files. Netlify serves 404.html for missing paths;
-# /api/* is still handled by the function (netlify/functions/index.mts).
-
 [build.processing.html]
 pretty_urls = true
 
-# Force is necessary: the existing 404.html asset would otherwise shadow these status rewrites.
 [[redirects]]
 from = "/404"
 to = "/404.html"
@@ -26,3 +22,7 @@ from = "/404.html"
 to = "/404.html"
 status = 404
 force = true
+
+[functions]
+directory = "www/netlify/functions"
+external_node_modules = ["@jat/subconverter-wasm"]

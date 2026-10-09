@@ -78,6 +78,32 @@ pnpm dev
 
 5. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+### Platform development servers
+
+Use the globally installed CLIs from `www/`:
+
+```bash
+netlify dev                                # http://localhost:8888
+vercel dev                                 # http://localhost:3000
+wrangler dev                               # built dist/ plus the Worker in workerd
+```
+
+Netlify's `[dev]` starts `pnpm run dev` and connects to Vite's default port 5173. Its outer proxy uses
+the default port 8888, and serves the Netlify Function, redirect rules and local Blobs. Netlify Dev
+loads `www/.env.local`; `netlify dev --offline` also works for local testing without cloud settings.
+
+For Vercel, first use `vercel link` to select the existing project, then `vercel pull` to download its
+Development settings and variables. The explicit `devCommand` runs Vite on the port allocated by
+Vercel; the CLI substitutes `$PORT` on both Windows and Linux. The outer server keeps its default
+port 3000. Set `ADMIN_TOKEN` and optionally `GITHUB_TOKEN` in the Vercel Development context if you
+need its local middleware to use them, then pull again. Variables loaded inside Vite are not
+automatically shared with the separate middleware process; an unset admin token returns 503.
+
+In Vercel CLI 63.1.0 on Windows, local Node Routing Middleware receives an empty POST body in this
+project, with both the Vite and Other presets. GET works. Use `pnpm dev` or `netlify dev` for complete
+local API development, and verify the Vercel middleware on a preview deployment. Do not add
+`skipMiddlewareRequestBody: false`: false is already the documented default.
+
 ### Build for Production
 
 ```bash
@@ -139,6 +165,8 @@ Branch deploys values of environment variables. Changed variables only apply to 
 
 ### Vercel
 
+The framework preset is `null` (Other). Vite remains the frontend build tool; the explicit install,
+build, output and proxy entry settings provide what this project needs without a framework preset.
 The Git integration builds every push from source on Vercel's Linux build machines: `vercel.json` runs
 `scripts/vercel-install.sh` as the install command, which builds the WASM package (Rust, release
 profile, Node target only) before installing www, then `vite build`. `proxy.entrypoint` selects
@@ -148,9 +176,11 @@ rewrite is needed. Prefer that over `vercel build` /
 `vercel deploy --prebuilt` from Windows, where the current Vercel CLI stores symlink targets verbatim
 (absolute junction paths, backslashes) and misses build traces
 ([vercel/vercel#17631](https://github.com/vercel/vercel/pull/17631),
-[vercel/vercel#17632](https://github.com/vercel/vercel/pull/17632)). With the Vite framework preset
-Vercel's build cache only covers `node_modules` (1 GB), so the script keeps the cargo registry, build
+[vercel/vercel#17632](https://github.com/vercel/vercel/pull/17632)). The static build caches
+`node_modules`, so the script keeps the cargo registry, build
 artifacts and WASM tools in `www/node_modules/.cache` and installs the Rust toolchain on every build.
+Other was verified with a cold Linux preview and a second preview restoring its build cache;
+the Rust step took 2m46s and 54s respectively.
 
 The explicit proxy entry is Routing Middleware on Node.js, so its documented request limits apply
 (including a 4 MB request body). See [Routing Middleware](https://vercel.com/docs/routing-middleware).
@@ -186,8 +216,8 @@ Then, in `www/`:
 
 ```bash
 pnpm build
-pnpm run start:workers                   # try the Worker locally in workerd
-pnpm run deploy:workers
+wrangler dev                            # try the Worker locally in workerd
+wrangler deploy
 wrangler secret put ADMIN_TOKEN
 ```
 

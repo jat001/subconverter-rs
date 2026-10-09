@@ -6,6 +6,11 @@ target/
 pkg/
 
 .claude/
-.vscode/
+.codex/
+.vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+.netlify/
+.vercel/
+.wrangler/

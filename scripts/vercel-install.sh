@@ -5,8 +5,8 @@
 # Building on Linux also keeps the Windows-only Vercel CLI problems (symlink targets, build trace
 # lookups) out of the way, as no Windows-built artifacts are uploaded.
 #
-# With the Vite framework preset Vercel restores only node_modules between builds (at most 1 GB, most of
-# it www's node_modules), so the cargo registry, the build artifacts and the WASM tools are kept in
+# The static build restores node_modules between builds, so the cargo registry, build artifacts and
+# WASM tools are kept in
 # www/node_modules/.cache; the Rust toolchain (~700 MB) is installed on every build.
 set -euo pipefail
 
