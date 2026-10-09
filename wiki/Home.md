@@ -28,6 +28,6 @@ subconverter-rs 是 C++ 版 [subconverter](https://github.com/tindy2013/subconve
 - AnyTLS、TUIC v5 等新协议的解析与输出
 - sing-box 输出（含 VLESS Reality、TUIC、AnyTLS 出站）
 - 单节点解析失败不再导致整个订阅解析失败（逐节点容错）
-- Next.js Web GUI 与短链接服务（`www/`，可部署到 Netlify）
+- React Web GUI 与短链接服务（`www/`，可部署到 Cloudflare Workers、Vercel 和 Netlify）
 
 尚未实现的 C++ 功能：Clash Script 渲染（`&script=` 的脚本模式）、`script:` 节点脚本处理。JS 脚本相关参数（`filter=`、`sort_script=`）需要以 `js-runtime` 特性构建的二进制。

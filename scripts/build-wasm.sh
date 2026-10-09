@@ -82,6 +82,7 @@ update_pkg_json() {
     rm -f "$PKG_JSON_BACKUP"
     echo "pkg/package.json updated"
   fi
+  cp wasm-host/package-readme.md pkg/README.md
 }
 
 # Cloudflare Workers build, published as `@jat/subconverter-wasm/workers`: the same crate through
