@@ -87,4 +87,4 @@ pnpm rebuild:wasm:dev # 或者：本地重新构建 wasm 后再启动（需 wasm
 
 ## 版本对应关系
 
-`Cargo.toml` 的版本驱动 Rust 与 WASM 包，`www/package.json` 声明对应的 `@jat/subconverter-wasm` 版本。发布准备包括检查配置、验证本地构建和候选包、编写更新日志；推送发布标签或上传包必须等用户最后确认。不要把准备工作直接变成公开发布。
+`Cargo.toml` 的版本驱动 Rust 与 WASM 包，`www/package.json` 声明对应的 `@jat/subconverter-wasm` 版本。发版从干净的工作区开始，完成版本号、文档和更新日志并提交，跑完本地验证，推送代码并确认该提交的线上 CI 通过。随后只在本地打 tag，列出发布操作并请求用户确认；确认后推送该 tag，由 CI 自动发布 npm、crates.io、原生发行包和容器。只有版本 tag 的推送可以触发发布，手动工作流只做预检。tag 指向的代码和文档就是最终版本，不保留临时发布状态说明。

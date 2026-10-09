@@ -1,67 +1,13 @@
 name: Build and Release
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-pre.*'
-      - 'v[0-9]+.[0-9]+.[0-9]+-rc.*'
+  workflow_call:
   workflow_dispatch:
-    inputs:
-      publish:
-        description: 'Create a draft Release (leave unchecked to build candidate artifacts only)'
-        type: boolean
-  repository_dispatch:
-    types: [trigger-native-release]
-
-concurrency: 
-  group: ${{ github.ref }}-${{ github.workflow }}
-  cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  wasm_build:
-    name: WASM package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Determine Version
-        env:
-          REQUESTED_VERSION: ${{ github.event.client_payload.version }}
-        run: bash scripts/release-version.sh
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24.x'
-      - run: npm install -g pnpm@12
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - name: Build from source
-        run: bash scripts/workers-build.sh
-      - name: Package WASM and crate
-        run: |
-          mkdir -p target/release-assets
-          pnpm --dir pkg pack --out ../target/release-assets/subconverter-wasm-%v.tgz
-          cargo package --locked
-          cp target/package/subconverter-rs-*.crate target/release-assets/
-      - uses: actions/upload-artifact@v7
-        with:
-          name: wasm-package
-          path: target/release-assets/
-      - name: Draft release
-        if: github.event_name != 'workflow_dispatch' || inputs.publish
-        uses: softprops/action-gh-release@v3
-        with:
-          files: target/release-assets/*
-          tag_name: v${{ env.RELEASE_VERSION }}
-          draft: true
-
   linux_build:
     strategy:
       matrix:
@@ -90,8 +36,6 @@ jobs:
       
     - name: Determine Version
       shell: bash
-      env:
-        REQUESTED_VERSION: ${{ github.event.client_payload.version }}
       run: bash scripts/release-version.sh
 
     - name: Setup Rust
@@ -110,7 +54,7 @@ jobs:
       run: cargo install cross
       
     - name: Build with cross
-      run: cross build --release --features=web-api${{ matrix.arch == 'amd64' && ',js-runtime' || '' }} --target ${{ matrix.target }}
+      run: cross build --locked --release --features=web-api${{ matrix.arch == 'amd64' && ',js-runtime' || '' }} --target ${{ matrix.target }}
       
     - name: Prepare artifact
       run: |
@@ -127,15 +71,6 @@ jobs:
         name: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }} # Append version to artifact name for clarity
         path: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.tar.gz
 
-    - name: Draft Release
-      # Run for tags or trigger-native-release event
-      if: github.event_name != 'workflow_dispatch' || inputs.publish
-      uses: softprops/action-gh-release@v3
-      with:
-        files: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.tar.gz
-        # Explicitly set tag_name for dispatch events, otherwise it defaults to github.ref (which is correct for tag pushes)
-        tag_name: v${{ env.RELEASE_VERSION }}
-        draft: true
 
   macos_build:
     strategy:
@@ -159,8 +94,6 @@ jobs:
       
     - name: Determine Version
       shell: bash
-      env:
-        REQUESTED_VERSION: ${{ github.event.client_payload.version }}
       run: bash scripts/release-version.sh
 
     - name: Setup Rust
@@ -171,7 +104,7 @@ jobs:
     - uses: Swatinem/rust-cache@v2
 
     - name: Build
-      run: cargo build --release --features=web-api,js-runtime --target ${{ matrix.target }}
+      run: cargo build --locked --release --features=web-api,js-runtime --target ${{ matrix.target }}
       
     - name: Prepare artifact
       run: |
@@ -188,14 +121,7 @@ jobs:
         name: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }} # Append version to artifact name
         path: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.tar.gz
 
-    - name: Draft Release
-      if: github.event_name != 'workflow_dispatch' || inputs.publish
-      uses: softprops/action-gh-release@v3
-      with:
-        files: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.tar.gz
-        tag_name: v${{ env.RELEASE_VERSION }}
-        draft: true
-  
+
   windows_build:
     strategy:
       matrix:
@@ -214,8 +140,6 @@ jobs:
       
     - name: Determine Version
       shell: bash
-      env:
-        REQUESTED_VERSION: ${{ github.event.client_payload.version }}
       run: bash scripts/release-version.sh
 
     - name: Setup Rust
@@ -227,7 +151,7 @@ jobs:
 
     - name: Build
       run: |
-        cargo build --release --features=web-api${{ matrix.arch == 'amd64' && ',js-runtime' || '' }} --target ${{ matrix.target }}
+        cargo build --locked --release --features=web-api${{ matrix.arch == 'amd64' && ',js-runtime' || '' }} --target ${{ matrix.target }}
       
     - name: Prepare artifact
       shell: bash
@@ -244,11 +168,3 @@ jobs:
       with:
         name: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }} # Append version to artifact name
         path: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.7z
-
-    - name: Draft Release
-      if: github.event_name != 'workflow_dispatch' || inputs.publish
-      uses: softprops/action-gh-release@v3
-      with:
-        files: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.7z
-        tag_name: v${{ env.RELEASE_VERSION }}
-        draft: true

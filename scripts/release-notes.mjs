@@ -1,0 +1,12 @@
+import fs from 'node:fs/promises';
+const [version, output] = process.argv.slice(2);
+if (!version || !output) throw new Error('Usage: release-notes.mjs VERSION OUTPUT');
+const changelog = await fs.readFile('CHANGELOG.md', 'utf8');
+const lines = changelog.split(/\r?\n/);
+const start = lines.findIndex(line => line === `## ${version}` || line.startsWith(`## ${version} — `));
+if (start < 0) throw new Error(`CHANGELOG.md has no ${version} release notes`);
+let end = lines.findIndex((line, index) => index > start && line.startsWith('## '));
+if (end < 0) end = lines.length;
+const notes = lines.slice(start + 1, end).join('\n').trim();
+if (!notes || /待发布|尚未发布|pending confirmation|release candidate/i.test(notes)) throw new Error('Release notes are not finalized');
+await fs.writeFile(output, notes + '\n');
