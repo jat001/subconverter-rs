@@ -3,8 +3,9 @@ use crate::utils::{file_exists, file_get_async};
 use crate::Settings;
 use log::{debug, error};
 use minijinja::{
-    context, escape_formatter, Environment, Error as JinjaError, ErrorKind, UndefinedBehavior,
-    Value,
+    context, escape_formatter,
+    value::{Serde, ValueKind},
+    Environment, Error as JinjaError, ErrorKind, UndefinedBehavior, Value,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -51,7 +52,14 @@ pub fn render_template(
     let mut env = Environment::new();
 
     // Copy settings from global environment
-    env.set_formatter(escape_formatter);
+    env.set_formatter(|out, state, value| {
+        // Config formats such as TOML require lowercase booleans; MiniJinja 3 displays them as Python literals.
+        if value.kind() == ValueKind::Bool {
+            escape_formatter(out, state, &Value::from(value.is_true().to_string()))
+        } else {
+            escape_formatter(out, state, value)
+        }
+    });
     env.set_undefined_behavior(UndefinedBehavior::Chainable);
 
     // Add the same filters and functions
@@ -71,18 +79,12 @@ pub fn render_template(
     env.add_function("default", fn_default);
     // env.add_function("fetch", fn_web_get);
 
-    // Build context object
-    let mut global_vars = HashMap::new();
-    for (key, value) in &args.global_vars {
-        global_vars.insert(key.clone(), value.clone());
-    }
-
     // Create full context with all variables
     let context = context!(
-        global => global_vars,
-        request => args.request_params,
-        local => args.local_vars,
-        node_list => args.node_list
+        global => Serde(&args.global_vars),
+        request => Serde(&args.request_params),
+        local => Serde(&args.local_vars),
+        node_list => Serde(&args.node_list)
     );
 
     debug!("Template context: {:?}", context);
@@ -236,7 +238,11 @@ fn fn_to_bool(s: Value) -> Result<bool, JinjaError> {
 }
 
 fn fn_to_string(n: Value) -> Result<String, JinjaError> {
-    Ok(n.to_string())
+    Ok(if n.kind() == ValueKind::Bool {
+        n.is_true().to_string()
+    } else {
+        n.to_string()
+    })
 }
 
 fn fn_default(value: Value, default: Value) -> Result<String, JinjaError> {

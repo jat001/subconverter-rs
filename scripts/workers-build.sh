@@ -13,8 +13,8 @@
 # build still works, it just starts from scratch.
 set -euo pipefail
 
-# The wasm-opt release wasm-pack 0.15 downloads by default, so the output matches local builds
-BINARYEN_VERSION=version_117
+# Use the current stable optimizer; its version is included in the output cache key.
+BINARYEN_VERSION=version_133
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cache="$HOME/.local/share/pnpm/store/subconverter-workers-build"

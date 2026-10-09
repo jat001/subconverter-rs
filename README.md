@@ -127,7 +127,7 @@ git clone https://github.com/jat001/subconverter-rs.git
 cd subconverter-rs
 cargo build --release --features=web-api
 ```
-The binary will be available at `target/release/subconverter-rs`.
+The binary will be available at `target/release/subconverter` (`subconverter.exe` on Windows).
 
 ---
 

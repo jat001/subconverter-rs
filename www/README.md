@@ -43,7 +43,7 @@ various formats and create shareable links with custom configurations.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 24.x or later
+- [Node.js](https://nodejs.org/) 24.x (the current LTS)
 - [pnpm](https://pnpm.io/) 12.x
 - [Rust](https://www.rust-lang.org/) (for building the WebAssembly component)
 
@@ -154,7 +154,7 @@ Dashboard settings (Project configuration):
 | Branch deploys | all branches |
 | Deploy Previews | pull requests against the production branch or a branch deploy branch |
 | Build image | Ubuntu Noble 24.04, whose rustup and Corepack the build script relies on |
-| Node.js | 24.x (www requires 24 or later) |
+| Node.js | 24.x (the current LTS) |
 | Visitor access | Netlify Team Login for non-production deploys (also the team's default): unpublished deploys and their URLs need a Netlify login, the published deploy is public |
 | Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`, with the Functions scope (the API runs as a function) and values for the Branch deploys and Production contexts; the Deploy Previews value is left empty, which turns the admin API off there. Netlify Blobs needs no configuration |
 

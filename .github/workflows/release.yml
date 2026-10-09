@@ -14,7 +14,46 @@ concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
+  wasm_build:
+    name: WASM package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+      - run: npm install -g pnpm@12
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - name: Build from source
+        run: bash scripts/workers-build.sh
+      - name: Package WASM and crate
+        run: |
+          mkdir -p target/release-assets
+          pnpm --dir pkg pack --out ../target/release-assets/subconverter-wasm-%v.tgz
+          cargo package --locked --allow-dirty --no-verify
+          cp target/package/subconverter-rs-*.crate target/release-assets/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wasm-package
+          path: target/release-assets/
+      - name: Draft release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
+        uses: softprops/action-gh-release@v3
+        with:
+          files: target/release-assets/*
+          tag_name: ${{ github.event_name == 'repository_dispatch' && format('v{0}', github.event.client_payload.version) || '' }}
+          draft: true
+
   linux_build:
     strategy:
       matrix:
@@ -39,7 +78,7 @@ jobs:
     name: Linux ${{ matrix.arch }} Build
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       
     - name: Determine Version
       id: get_version
@@ -74,6 +113,8 @@ jobs:
       with:
         targets: ${{ matrix.target }}
     
+    - uses: Swatinem/rust-cache@v2
+
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -92,7 +133,7 @@ jobs:
         cp -r base/* subconverter/
         
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }} # Append version to artifact name for clarity
         path: subconverter/
@@ -105,7 +146,7 @@ jobs:
     - name: Draft Release
       # Run for tags or trigger-native-release event
       if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'repository_dispatch' && github.event.action == 'trigger-native-release')
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.tar.gz
         # Explicitly set tag_name for dispatch events, otherwise it defaults to github.ref (which is correct for tag pushes)
@@ -130,7 +171,7 @@ jobs:
     name: macOS ${{ matrix.arch }} Build
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       
     - name: Determine Version
       id: get_version
@@ -163,6 +204,8 @@ jobs:
         sed -i -e "s/^version = \"$CURRENT_VERSION\"/version = \"${{ env.RELEASE_VERSION }}\"/" Cargo.toml
         echo "Updated Cargo.toml version for branch build to ${{ env.RELEASE_VERSION }}"
         
+    - uses: Swatinem/rust-cache@v2
+
     - name: Build
       run: cargo build --release --features=web-api,js-runtime --target ${{ matrix.target }}
       
@@ -173,7 +216,7 @@ jobs:
         cp -r base/* subconverter/
         
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }} # Append version to artifact name
         path: subconverter/
@@ -184,7 +227,7 @@ jobs:
       
     - name: Draft Release
       if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'repository_dispatch' && github.event.action == 'trigger-native-release')
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.tar.gz
         tag_name: ${{ github.event_name == 'repository_dispatch' && format('v{0}', env.RELEASE_VERSION) || '' }}
@@ -204,7 +247,7 @@ jobs:
     name: Windows ${{ matrix.arch }} Build
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       
     - name: Determine Version
       id: get_version
@@ -239,9 +282,10 @@ jobs:
         sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"${{ env.RELEASE_VERSION }}\"/" Cargo.toml
         echo "Updated Cargo.toml version for branch build to ${{ env.RELEASE_VERSION }}"
         
+    - uses: Swatinem/rust-cache@v2
+
     - name: Build
       run: |
-        cargo install --force --locked bindgen-cli
         cargo build --release --features=web-api${{ matrix.arch == 'amd64' && ',js-runtime' || '' }} --target ${{ matrix.target }}
       
     - name: Prepare artifact
@@ -252,7 +296,7 @@ jobs:
         cp -r base/* subconverter/
         
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }} # Append version to artifact name
         path: subconverter/
@@ -263,8 +307,8 @@ jobs:
       
     - name: Draft Release
       if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'repository_dispatch' && github.event.action == 'trigger-native-release')
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: ${{ matrix.artifact }}-${{ env.RELEASE_VERSION }}.7z
         tag_name: ${{ github.event_name == 'repository_dispatch' && format('v{0}', env.RELEASE_VERSION) || '' }}
-        draft: true 
+        draft: true

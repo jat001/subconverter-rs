@@ -20,7 +20,7 @@ cargo run --features web-api                 # server on 127.0.0.1:25500
 # One-shot conversion without a server (--url is a request URI, routed through the same handlers)
 cargo run --features web-api -- --url "/sub?target=clash&url=..." -o output.yaml
 
-# Tests (inline #[cfg(test)] modules; no tests/ directory)
+# Tests (inline unit/golden tests plus integration tests in tests/)
 cargo test
 cargo test some_test_name                    # single test by name substring
 cd wasm-host && pnpm test                    # TS host bindings: build src/ -> dist/, run node:test suite
@@ -62,7 +62,9 @@ CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo fm
 
 ## Release flow
 
-Version in `Cargo.toml` drives everything; `www/package.json` pins the matching `@jat/subconverter-wasm` version. `./scripts/build-wasm.sh --bump-patch` bumps the version, commits, and pushes a `v{X.Y.Z}-attempt{N}` tag that triggers the GitHub Actions release (npm + crates.io + binaries). `--bump-beta` (non-main branch only) publishes an npm beta and deploys a Netlify preview. Both require a clean git tree.
+Version in `Cargo.toml` drives everything; `www/package.json` pins the matching `@jat/subconverter-wasm` version. After updating both manifests and their lockfiles and passing Test, a stable `v{X.Y.Z}` tag runs Build and Release: eight native binaries, an installable WASM npm tarball (Node and Workers), and a crate archive are uploaded to a draft GitHub Release. Verify every job and asset before publishing that draft. Publishing triggers Docker Build Multi-Arch for GHCR; Docker Hub is optional and requires both `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets.
+
+Registry publication is separate: `./scripts/build-wasm.sh --bump-patch` commits a version bump and pushes a `v{X.Y.Z}-attempt{N}` tag that runs WASM Release. It requires npm authentication (a configured trusted publisher or `NPM_TOKEN`), `CARGO_REGISTRY_TOKEN` and `PAT_TOKEN` for its registry/tag/dispatch flow. A GitHub tarball release does not imply npm or crates.io publication. `--bump-beta` (non-main branch only) publishes an npm beta and deploys a Netlify preview. Both scripts require a clean git tree. Node remains on the current LTS (24.x), with matching `@types/node` 24.x.
 
 ## Architecture
 

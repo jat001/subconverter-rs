@@ -56,7 +56,7 @@ git clone https://github.com/jat001/subconverter-rs.git
 cd subconverter-rs
 cargo build --release --features=web-api
 ```
-二进制文件将位于 `target/release/subconverter-rs`。
+二进制文件将位于 `target/release/subconverter`（Windows 下为 `subconverter.exe`）。
 
 ---
 

@@ -230,7 +230,7 @@ class FakeKvNamespace {
       case 'arrayBuffer':
         return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
       case 'stream':
-        return new Blob([bytes]).stream()
+        return new Blob([new Uint8Array(bytes)]).stream()
       default:
         return new TextDecoder().decode(bytes)
     }

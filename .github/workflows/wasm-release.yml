@@ -26,7 +26,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
@@ -179,7 +179,7 @@ jobs:
 
       - name: Commit and push package.json changes
         if: hashFiles('www/package.json') != ''
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v11
         with:
           add: 'www/package.json www/pnpm-lock.yaml'
           message: 'Update @jat/subconverter-wasm dependency to ${{ steps.set-version.outputs.version }}'
@@ -212,14 +212,14 @@ jobs:
 
       - name: Create release tag
         if: steps.tag-exists.outputs.exists != 'true'
-        uses: mathieudutour/github-tag-action@v6.1
+        uses: mathieudutour/github-tag-action@v7
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           custom_tag: ${{ steps.set-version.outputs.version }}
 
       - name: Trigger release workflow
         if: steps.tag-exists.outputs.exists != 'true'
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
           event-type: trigger-native-release

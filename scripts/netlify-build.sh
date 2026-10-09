@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build command of the Netlify site (www/netlify.toml): builds the WASM package from source on Netlify's
-# Linux build machine, installs www and runs `next build` for Netlify's Next.js runtime to deploy.
+# Linux build machine, installs www and builds the shared Vite SPA alongside the Netlify Function.
 #
 # Site settings: base directory unset (repository root), package directory `www`. The build runs from the
 # base directory, which has no lockfile, so Netlify does not run its own `pnpm install` of www before the
