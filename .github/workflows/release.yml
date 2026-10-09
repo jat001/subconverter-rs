@@ -44,6 +44,9 @@ jobs:
         targets: ${{ matrix.target }}
     
     - uses: Swatinem/rust-cache@v2
+      with:
+        # Cross images use different host glibc versions. Sharing build-script binaries breaks amd64.
+        key: ${{ matrix.target }}
 
     - name: Install dependencies
       run: |
