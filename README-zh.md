@@ -1,5 +1,7 @@
 # subconverter-rs 使用指南
 
+本分支正在准备 0.3.0，面向使用者的功能变化和迁移说明见 [更新日志](CHANGELOG.md)。当前 `0.3.0-dev` 是开发版本，尚未发布。
+
 <div align="center">
 
 <img src="www/public/logo.svg" alt="subconverter-rs logo" width="150">

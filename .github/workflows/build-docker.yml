@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release tag (for example v0.2.37)'
+        description: 'Release tag (for example v0.3.0)'
         required: true
       also_latest:
         description: 'Also update latest'

@@ -3,6 +3,9 @@
 A modern web UI for the subconverter-rs project. This project allows you to convert proxy subscriptions to
 various formats and create shareable links with custom configurations.
 
+The private application package is named `subconverter-web`. It is a Vite SPA with a shared Hono API;
+its name describes the web application rather than a particular framework.
+
 ## Features
 
 - Convert proxy subscriptions to different formats (Clash, Surge, Quantumult X, etc.)

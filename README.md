@@ -22,6 +22,8 @@ A more powerful utility to convert between proxy subscription formats, transform
 
 **⚠️ BETA VERSION AVAILABLE ⚠️** - This project is now in beta. Core features are implemented but may still have some rough edges.
 
+This fork is preparing its 0.3.0 release. See the [changelog](CHANGELOG.md) for user-facing changes and migration notes; the current `0.3.0-dev` version is not a published release.
+
 🎉 wasm版本白嫖一键部署：
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jat001/subconverter-rs&base=www)
 

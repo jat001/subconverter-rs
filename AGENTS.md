@@ -62,6 +62,14 @@ CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo fm
 
 ## Release flow
 
+When the user asks to "release" / "发版", prepare the release workflow, check missing configuration,
+complete local verification, and write release notes for users. Obtain a separate, explicit final
+confirmation before any publication. Do not infer approval from the initial release request or passing
+checks. Before confirmation, do not push release-triggering tags, publish GitHub Releases or registry
+packages, or push version/latest container tags. Prepare and verify candidate artifacts locally, and
+keep release notes as a local draft until the user confirms publication. An explicit withdrawal request
+authorizes withdrawing the named release.
+
 Version in `Cargo.toml` drives everything; `www/package.json` pins the matching `@jat/subconverter-wasm` version. After updating both manifests and their lockfiles and passing Test, a stable `v{X.Y.Z}` tag runs Build and Release: eight native binaries, an installable WASM npm tarball (Node and Workers), and a crate archive are uploaded to a draft GitHub Release. Verify every job and asset before publishing that draft. Publishing triggers Docker Build Multi-Arch for GHCR; Docker Hub is optional and requires both `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets.
 
 Registry publication is separate: `./scripts/build-wasm.sh --bump-patch` commits a version bump and pushes a `v{X.Y.Z}-attempt{N}` tag that runs WASM Release. It requires npm authentication (a configured trusted publisher or `NPM_TOKEN`), `CARGO_REGISTRY_TOKEN` and `PAT_TOKEN` for its registry/tag/dispatch flow. A GitHub tarball release does not imply npm or crates.io publication. `--bump-beta` (non-main branch only) publishes an npm beta and deploys a Netlify preview. Both scripts require a clean git tree. Node remains on the current LTS (24.x), with matching `@types/node` 24.x.

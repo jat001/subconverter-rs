@@ -7,7 +7,7 @@ RUN apk add --no-cache  musl-dev perl linux-headers
 RUN cargo build --release --bin subconverter --features web-api
 
 FROM alpine:3.24
-LABEL maintainer="@jonnyan404"
+LABEL maintainer="@jat001"
 
 WORKDIR /app
 
