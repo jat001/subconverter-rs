@@ -78,7 +78,7 @@ After explicit publication confirmation, `./scripts/build-wasm.sh --bump-patch` 
 
 Before confirmation, manually run `wasm-release.yml` with the candidate version and `publish=false`
 to build the packages, verify both real OIDC exchanges, perform publish dry-runs and save candidate
-artifacts. `release.yml` manual runs build all native archives without creating a GitHub Release.
+artifacts. `release.yml` manual runs with `publish=false` build all native archives without creating a GitHub Release.
 `build-docker.yml` manual runs with `publish=false` authenticate, build and test local amd64/arm64
 images without pushing tags or manifests. Registry and Docker manual runs publish only when their
 `publish` checkbox is explicitly enabled after the user's final confirmation. Release events still
