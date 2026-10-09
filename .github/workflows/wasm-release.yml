@@ -1,7 +1,7 @@
 name: WASM Release
 
-# This workflow requires a personal access token with workflows permission
-# Please create a PAT with 'workflow' scope permissions and add it as a secret named PAT_TOKEN
+# Publishes only npm and crates.io using their configured OIDC trusted publishers.
+# GitHub Releases and container publication are separate, explicitly authorized operations.
 
 on:
   push:
@@ -21,8 +21,7 @@ jobs:
     name: Release WASM Package
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      packages: write
+      contents: read
       id-token: write
     steps:
       - name: Checkout repository
@@ -58,16 +57,14 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Final version for release: $VERSION"
 
-      - name: Update version in Cargo.toml
+      - name: Check source version
+        env:
+          RELEASE_VERSION: ${{ steps.set-version.outputs.version }}
         run: |
-          CURRENT_VERSION=$(grep -m 1 "version" Cargo.toml | sed 's/.*"\(.*\)".*/\1/')
-          VERSION="${{ steps.set-version.outputs.version }}"
-
-          if [ "$CURRENT_VERSION" != "$VERSION" ]; then
-            echo "Updating version in Cargo.toml from $CURRENT_VERSION to $VERSION"
-            sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$VERSION\"/" Cargo.toml
-          else
-            echo "Version in Cargo.toml already matches $VERSION"
+          CURRENT_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
+          if [ "$CURRENT_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "::error::Source version $CURRENT_VERSION does not match requested version $RELEASE_VERSION; select the verified release source"
+            exit 1
           fi
 
       - name: Setup Node.js
@@ -124,10 +121,8 @@ jobs:
           npm install
           cd ..
 
-      # Auth: OIDC trusted publishing (preferred, no token needed once the
-      # trusted publisher is configured on npmjs.com for this repo+workflow);
-      # NODE_AUTH_TOKEN remains as a fallback. Skips if the version already
-      # exists so the workflow is safe to re-run.
+      # npm exchanges this GitHub workflow identity through its configured trusted publisher.
+      # Skip existing versions so retrying cannot overwrite a published package.
       - name: Publish to npm
         run: |
           VERSION="${{ steps.set-version.outputs.version }}"
@@ -136,92 +131,27 @@ jobs:
             exit 0
           fi
           cd pkg
-          npm publish --access public
+          npm publish
+
+      - name: Check crates.io version
+        id: crate-version
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Update version in www project
-        if: hashFiles('www/package.json') != ''
+          RELEASE_VERSION: ${{ steps.set-version.outputs.version }}
         run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
-          if [ -d "www" ] && [ -f "www/package.json" ]; then
-            echo "Updating version in www/package.json to $VERSION..."
-            cd www
-            jq ".dependencies[\"@jat/subconverter-wasm\"] = \"$VERSION\"" package.json > tmp.json && mv tmp.json package.json
-            npm install -g pnpm
-            # pnpm install --no-frozen-lockfile
-            # Add retry logic for pnpm install
-            MAX_RETRIES=5
-            RETRY_DELAY=5 # seconds
-            RETRY_COUNT=0
-
-            echo "Running pnpm install in www (will retry up to $MAX_RETRIES times)..."
-            until pnpm install --no-frozen-lockfile; do
-                RETRY_COUNT=$((RETRY_COUNT + 1))
-                if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-                    echo "Error: pnpm install failed after $MAX_RETRIES attempts."
-                    # Optionally fail the workflow step:
-                    # exit 1
-                    break # Or exit 1 to fail the step
-                fi
-                echo "pnpm install failed. Retrying in $RETRY_DELAY seconds (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
-                sleep $RETRY_DELAY
-            done
-            # Check if pnpm install ultimately succeeded
-            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-              echo "pnpm install successful."
-            else
-              echo "pnpm install failed after retries. Continuing workflow..." # Or exit 1 if failure should stop the workflow
-            fi
-            cd ..
-          else
-            echo "www/package.json not found, skipping update"
-          fi
-
-      - name: Commit and push package.json changes
-        if: hashFiles('www/package.json') != ''
-        uses: EndBug/add-and-commit@v11
-        with:
-          add: 'www/package.json www/pnpm-lock.yaml'
-          message: 'Update @jat/subconverter-wasm dependency to ${{ steps.set-version.outputs.version }}'
-          default_author: github_actions
-          push: true
-          new_branch: main
-
-      # Skips if the version is already on crates.io so the workflow is safe
-      # to re-run after a partial failure.
-      - name: Publish to crates.io
-        run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
-          # crates.io API rejects requests without a User-Agent
-          if curl -sf -A "subconverter-rs-release-workflow" https://crates.io/api/v1/crates/subconverter-rs/versions | jq -e --arg v "$VERSION" '.versions[] | select(.num == $v)' >/dev/null; then
-            echo "subconverter-rs ${VERSION} already on crates.io, skipping publish"
-            exit 0
-          fi
-          cargo publish --allow-dirty --registry crates-io
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
-      - name: Check whether release tag already exists
-        id: tag-exists
-        run: |
-          if git ls-remote --exit-code --tags origin "v${{ steps.set-version.outputs.version }}" >/dev/null 2>&1; then
+          if curl -sf -A "subconverter-rs-release-workflow" https://crates.io/api/v1/crates/subconverter-rs/versions | jq -e --arg v "$RELEASE_VERSION" '.versions[] | select(.num == $v)' >/dev/null; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "subconverter-rs $RELEASE_VERSION already exists; skipping publish"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create release tag
-        if: steps.tag-exists.outputs.exists != 'true'
-        uses: mathieudutour/github-tag-action@v7
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          custom_tag: ${{ steps.set-version.outputs.version }}
+      - name: Authenticate with crates.io trusted publisher
+        if: steps.crate-version.outputs.exists != 'true'
+        id: crates-auth
+        uses: rust-lang/crates-io-auth-action@v1
 
-      - name: Trigger release workflow
-        if: steps.tag-exists.outputs.exists != 'true'
-        uses: peter-evans/repository-dispatch@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          event-type: trigger-native-release
-          client-payload: '{"version": "${{ steps.set-version.outputs.version }}"}'
+      - name: Publish to crates.io
+        if: steps.crate-version.outputs.exists != 'true'
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
