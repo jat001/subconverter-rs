@@ -1,12 +1,12 @@
 # 更新日志
 
-## 0.3.1（待发布）
+## 0.3.1
 
 此版本完善 0.3 系列的安装与发行方式，订阅转换功能、接口和存储格式沿用 0.3.0，无需迁移已有配置或短链。
 
-- 修正发行文档中遗留的 Next.js 部署与候选版本说明，明确网页和 WASM 包各自的使用方式。
+- 修正发行文档中遗留的 Next.js 部署说明，明确网页和 WASM 包各自的使用方式。
 - 完善 Linux、macOS、Windows 原生发行包及 amd64/arm64 容器的构建检查，修正安装脚本对 macOS 和 32 位 Linux 架构的识别。
-- npm 和 crates.io 使用 GitHub Trusted Publishing；发布流程支持先构建、验证认证和候选产物，再单独执行发布。
+- npm 和 crates.io 使用 GitHub Trusted Publishing，通过工作流验证身份后发布；不再需要长期发布 token。
 
 ## 0.3.0 — 2026-10-10
 
