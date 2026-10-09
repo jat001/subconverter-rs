@@ -1,6 +1,14 @@
 # 更新日志
 
-## 0.3.0（候选版本，尚未发布）
+## 0.3.1（待发布）
+
+此版本完善 0.3 系列的安装与发行方式，订阅转换功能、接口和存储格式沿用 0.3.0，无需迁移已有配置或短链。
+
+- 修正发行文档中遗留的 Next.js 部署与候选版本说明，明确网页和 WASM 包各自的使用方式。
+- 完善 Linux、macOS、Windows 原生发行包及 amd64/arm64 容器的构建检查，修正安装脚本对 macOS 和 32 位 Linux 架构的识别。
+- npm 和 crates.io 使用 GitHub Trusted Publishing；发布流程支持先构建、验证认证和候选产物，再单独执行发布。
+
+## 0.3.0 — 2026-10-10
 
 这是 `jat001/subconverter-rs` 分支相对上游 0.2 系列的整体更新。重点是统一网页部署、补齐 Cloudflare Workers 支持，并改善订阅错误提示和后台访问控制。
 
@@ -30,4 +38,4 @@
 - 如果需要后台管理或保存、管理短链，请为对应部署环境配置 `ADMIN_TOKEN`。现有配置和存储命名空间继续使用，无需清空数据。
 - 自定义 Jinja 模板使用新版模板引擎；直接输出布尔值仍保留小写 `true/false`。使用数值运算、`round` 或 `tojson` 等表达式的模板，应在升级前核对生成结果。
 
-正式发布前会补充下载入口和已完成的安装验证。本节目前是发布说明草稿。
+本版已发布 [npm 包](https://www.npmjs.com/package/@jat/subconverter-wasm/v/0.3.0) 与 [Rust crate](https://crates.io/crates/subconverter-rs/0.3.0)。原生程序和容器的完整发行流程在 0.3.1 中补齐。

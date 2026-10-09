@@ -13,6 +13,9 @@ on:
         description: 'Version to release (without v prefix)'
         required: true
         type: string
+      publish:
+        description: 'Publish the verified version (leave unchecked to build and verify only)'
+        type: boolean
   repository_dispatch:
     types: [trigger-wasm-release]
 
@@ -42,30 +45,10 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Set version from input, tag or dispatch
-        id: set-version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          elif [[ "${{ github.event_name }}" == "repository_dispatch" && "${{ github.event.action }}" == "trigger-wasm-release" ]]; then
-            VERSION="${{ github.event.client_payload.version }}"
-          else
-            TAG_NAME="${GITHUB_REF#refs/tags/}"
-            BASE_VERSION=$(echo $TAG_NAME | sed -E 's/v([0-9]+\.[0-9]+\.[0-9]+)(-[a-zA-Z0-9\.]+)?-attempt[0-9]+?/\1\2/')
-            VERSION="$BASE_VERSION"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Final version for release: $VERSION"
-
-      - name: Check source version
+      - name: Determine Version
         env:
-          RELEASE_VERSION: ${{ steps.set-version.outputs.version }}
-        run: |
-          CURRENT_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
-          if [ "$CURRENT_VERSION" != "$RELEASE_VERSION" ]; then
-            echo "::error::Source version $CURRENT_VERSION does not match requested version $RELEASE_VERSION; select the verified release source"
-            exit 1
-          fi
+          REQUESTED_VERSION: ${{ inputs.version || github.event.client_payload.version }}
+        run: bash scripts/release-version.sh
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -88,28 +71,11 @@ jobs:
             exit 1
           }
 
-      - name: Build WASM package
-        run: |
-          wasm-pack build --release --target nodejs
-          echo "WASM build complete!"
+      - name: Build release-profile Node and Workers packages
+        run: bash scripts/workers-build.sh
 
-      # Published as @jat/subconverter-wasm/workers; keep in sync with build_workers_pkg in scripts/build-wasm.sh
-      - name: Build Cloudflare Workers WASM package
-        run: |
-          rm -rf pkg/workers
-          wasm-pack build --release --target web --out-dir pkg/workers --no-pack
-          # wasm-pack writes a `*` .gitignore, which would make npm drop the whole directory when publishing
-          rm -f pkg/workers/.gitignore
-          # Merged in, including snippets/package.json, which marks the CommonJS host bindings as such
-          cp -r wasm-host/workers/. pkg/workers/
-
-      # Runtime dependencies of the wasm-host bindings are declared in wasm-host/package.json
-      - name: Update package.json in pkg directory
-        run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
-          jq --arg ver "$VERSION" --slurpfile host wasm-host/package.json -f scripts/pkg-package.jq \
-            pkg/package.json > tmp.json && mv tmp.json pkg/package.json
-          cp wasm-host/package-readme.md pkg/README.md
+      - name: Verify npm OIDC identity exchange
+        run: node scripts/check-npm-oidc.mjs
 
       # npm >= 11.5.1 is required for OIDC trusted publishing
       - name: Ensure npm supports trusted publishing
@@ -124,8 +90,9 @@ jobs:
       # npm exchanges this GitHub workflow identity through its configured trusted publisher.
       # Skip existing versions so retrying cannot overwrite a published package.
       - name: Publish to npm
+        if: github.event_name != 'workflow_dispatch' || inputs.publish
         run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
+          VERSION="${{ env.RELEASE_VERSION }}"
           if npm view "@jat/subconverter-wasm@${VERSION}" version >/dev/null 2>&1; then
             echo "@jat/subconverter-wasm@${VERSION} already on npm, skipping publish"
             exit 0
@@ -133,25 +100,34 @@ jobs:
           cd pkg
           npm publish
 
-      - name: Check crates.io version
-        id: crate-version
-        env:
-          RELEASE_VERSION: ${{ steps.set-version.outputs.version }}
-        run: |
-          if curl -sf -A "subconverter-rs-release-workflow" https://crates.io/api/v1/crates/subconverter-rs/versions | jq -e --arg v "$RELEASE_VERSION" '.versions[] | select(.num == $v)' >/dev/null; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "subconverter-rs $RELEASE_VERSION already exists; skipping publish"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Authenticate with crates.io trusted publisher
-        if: steps.crate-version.outputs.exists != 'true'
         id: crates-auth
         uses: rust-lang/crates-io-auth-action@v1
 
+      - name: Verify packages without publishing
+        if: github.event_name == 'workflow_dispatch' && !inputs.publish
+        run: |
+          mkdir -p target/release-candidates
+          pnpm --dir pkg pack --out ../target/release-candidates/subconverter-wasm-%v.tgz
+          (cd pkg && npm publish --dry-run)
+          cargo publish --dry-run --locked
+          cargo package --locked
+          cp target/package/subconverter-rs-*.crate target/release-candidates/
+
+      - name: Upload candidate packages
+        if: github.event_name == 'workflow_dispatch' && !inputs.publish
+        uses: actions/upload-artifact@v7
+        with:
+          name: registry-candidates
+          path: target/release-candidates/
+
       - name: Publish to crates.io
-        if: steps.crate-version.outputs.exists != 'true'
-        run: cargo publish --locked
+        if: github.event_name != 'workflow_dispatch' || inputs.publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+        run: |
+          if curl -sf -A "subconverter-rs-release-workflow" https://crates.io/api/v1/crates/subconverter-rs/versions | jq -e --arg v "$RELEASE_VERSION" '.versions[] | select(.num == $v)' >/dev/null; then
+            echo "subconverter-rs $RELEASE_VERSION already exists; skipping publish"
+          else
+            cargo publish --locked
+          fi

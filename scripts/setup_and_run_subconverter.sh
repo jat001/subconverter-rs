@@ -26,8 +26,11 @@ case "$OS" in
 esac
 
 case "$ARCH" in
-    x86_64) GITHUB_ARCH="amd64" ;; # GitHub uses amd64 for x86_64
-    aarch64) GITHUB_ARCH="aarch64" ;;
+    x86_64)
+        if [ "$GITHUB_OS" = "macos" ]; then GITHUB_ARCH="x86_64"; else GITHUB_ARCH="amd64"; fi
+        ;;
+    aarch64|arm64) GITHUB_ARCH="aarch64" ;;
+    i386|i686) GITHUB_ARCH="x86" ;;
     armv7l) GITHUB_ARCH="armv7" ;; # Assuming armv7l maps to armv7
     *) echo "Error: Unsupported architecture: $ARCH"; exit 1 ;;
 esac
@@ -133,4 +136,4 @@ echo "'$EXECUTABLE_NAME' stopped."
 # Go back to the original directory
 cd "$ORIGINAL_DIR"
 
-echo "Setup and execution finished." 
+echo "Setup and execution finished."

@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 
 RUN apk add --no-cache  musl-dev perl linux-headers
-RUN cargo build --release --bin subconverter --features web-api
+RUN cargo build --release --bin subconverter --features web-api --locked
 
 FROM alpine:3.24
 LABEL maintainer="@jat001"

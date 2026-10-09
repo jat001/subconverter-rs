@@ -1,6 +1,6 @@
 # subconverter-rs 使用指南
 
-本分支正在准备 0.3.0，面向使用者的功能变化和迁移说明见 [更新日志](CHANGELOG.md)。这是待确认发布的候选源码，尚未发布。
+0.3.0 的 Rust 与 WASM 包已发布到 crates.io 和 npm。当前源码正在准备 0.3.1，待用户确认后发布。功能变化和迁移说明见 [更新日志](CHANGELOG.md)。
 
 <div align="center">
 

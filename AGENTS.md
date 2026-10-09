@@ -76,6 +76,14 @@ Registry publication is separate: `wasm-release.yml` publishes only npm and crat
 
 After explicit publication confirmation, `./scripts/build-wasm.sh --bump-patch` can commit a version bump and push a `v{X.Y.Z}-attempt{N}` tag to run WASM Release. GitHub binaries and containers remain separate publication steps. `--bump-beta` (non-main branch only) publishes an npm beta and deploys a Netlify preview. Both scripts require a clean git tree. Node remains on the current LTS (24.x), with matching `@types/node` 24.x.
 
+Before confirmation, manually run `wasm-release.yml` with the candidate version and `publish=false`
+to build the packages, verify both real OIDC exchanges, perform publish dry-runs and save candidate
+artifacts. `release.yml` manual runs build all native archives without creating a GitHub Release.
+`build-docker.yml` manual runs with `publish=false` authenticate, build and test local amd64/arm64
+images without pushing tags or manifests. Registry and Docker manual runs publish only when their
+`publish` checkbox is explicitly enabled after the user's final confirmation. Release events still
+publish containers, so publishing a GitHub Release must be included in that confirmation's scope.
+
 ## Architecture
 
 The conversion pipeline is **parse → transform → generate**, orchestrated in `src/interfaces/subconverter.rs` (`SubconverterConfig` / `subconverter()`). Both the native web handlers and the WASM API funnel through this one entry point.
