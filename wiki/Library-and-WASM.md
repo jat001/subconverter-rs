@@ -6,7 +6,7 @@ crate 名为 [`subconverter-rs`](https://crates.io/crates/subconverter-rs)（库
 
 ```toml
 [dependencies]
-subconverter-rs = "0.2"
+subconverter-rs = "0.3"
 ```
 
 核心入口是 `SubconverterConfigBuilder` + `subconverter()`，与 HTTP API 走同一条管线：
@@ -66,25 +66,25 @@ const resp = await wasm.sub_process_wasm(JSON.stringify({
 | `admin_load_github_directory(path)` | 从 GitHub 懒加载缺失的 base 配置/规则 |
 | 短链接、规则更新等 | 见包的 `.d.ts` 类型定义 |
 
-在 WASM 环境中"文件"读写通过 **KV 虚拟文件系统**（Netlify Blobs / Vercel KV）完成，缺失的 `base/` 文件会自动从 GitHub 拉取。
+在 WASM 环境中"文件"读写通过 **KV 虚拟文件系统**（Netlify Blobs / Upstash Redis / Workers KV）完成，缺失的 `base/` 文件会自动从 GitHub 拉取。Workers 使用包中的 `@jat/subconverter-wasm/workers` 入口和 `KV` 命名空间绑定。
 
 ## 自部署 Netlify（Web GUI + Serverless API）
 
-`www/` 目录即在线服务的完整实现（Next.js 15 + `@jat/subconverter-wasm`）：
+`www/` 目录是在线服务的完整实现（Vite React 单页应用 + Hono API + `@jat/subconverter-wasm`）：
 
-1. Fork 本仓库，在 Netlify 新建站点指向 fork，设置 base directory 为 `www`（`www/netlify.toml` 已含构建配置）
-2. Netlify 会构建 Next.js 前端，并把 `/api/*` 作为 Serverless Functions 运行 WASM 转换
-3. 启用 Netlify Blobs 后短链接与在线配置编辑即可用
+1. Fork 本仓库，在 Netlify 新建站点指向 fork；base directory 留空，package directory 设为 `www`，不选择 Next.js Runtime。
+2. 构建脚本从源码构建 WASM 和网页，`/api/*` 由 Netlify Function 运行共享 API；Netlify Blobs 自动提供持久存储。
+3. 为 Functions 配置 `ADMIN_TOKEN` 后可使用配置编辑和短链管理。完整的平台设置见 [网页部署指南](https://github.com/jat001/subconverter-rs/blob/main/www/README.md)。
 
 本地开发：
 
 ```bash
 cd www
 pnpm install
-pnpm dev              # 使用 npm 上已发布的 @jat/subconverter-wasm
+pnpm dev              # 使用 ../pkg 中已经构建的本地 WASM 包
 pnpm rebuild:wasm:dev # 或者：本地重新构建 wasm 后再启动（需 wasm-pack、jq）
 ```
 
 ## 版本对应关系
 
-`Cargo.toml` 的版本驱动一切：`www/package.json` 锁定同版本的 `@jat/subconverter-wasm`。发版用 `./scripts/build-wasm.sh --bump-patch`，会自动提交并推送 `v{X.Y.Z}-attempt{N}` 标签，触发 GitHub Actions 发布 npm 包、crates.io、各平台二进制与 Docker 镜像。
+`Cargo.toml` 的版本驱动 Rust 与 WASM 包，`www/package.json` 声明对应的 `@jat/subconverter-wasm` 版本。发布准备包括检查配置、验证本地构建和候选包、编写更新日志；推送发布标签或上传包必须等用户最后确认。不要把准备工作直接变成公开发布。

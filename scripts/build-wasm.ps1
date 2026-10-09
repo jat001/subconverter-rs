@@ -115,6 +115,7 @@ function Update-PkgJson {
         if (Test-Path $PkgJsonBackup) { Remove-Item $PkgJsonBackup -Force }
         Write-Host "pkg/package.json updated"
     }
+    Copy-Item -LiteralPath 'wasm-host/package-readme.md' -Destination 'pkg/README.md' -Force
 }
 
 # Cloudflare Workers build, published as `@jat/subconverter-wasm/workers`: the same crate through
