@@ -60,6 +60,14 @@ Optional cargo feature `js-runtime` (rquickjs, non-wasm only) enables JS scripti
 
 CI (`.github/workflows/test.yml`, on pushes to `main` and on PRs) runs `cargo fmt --check`, `cargo test`, `cargo check` for wasm32 and for the `js-runtime` feature (all with `RUSTFLAGS=-D warnings`), the wasm-host typecheck/tests (failing if the committed `wasm-host/dist/` is stale), and for `www/` a dev WASM build followed by `pnpm lint`, typecheck, `pnpm build` and a `wrangler deploy --dry-run` of the Worker.
 
+## Repository hygiene
+
+Keep one-off verification, diagnostic and migration scripts outside the repository. Commit only
+scripts that belong to the maintained build, test or release workflows.
+
+Before committing, format changed code using the project's existing formatting rules. Use readable
+names, normal line breaks and explicit control-flow blocks; do not commit compressed scratch code.
+
 ## Release flow
 
 When the user asks to "release" / "发版", prepare the release workflow, check missing configuration,
@@ -75,7 +83,7 @@ Use this exact sequence for a release:
 1. Start with a clean working tree and no pending code changes; commit existing authorized work first.
 2. Finalize all code/documentation version numbers, lockfiles and user-facing release notes, then commit.
 3. Run all local tests and validation. Fix failures and commit before proceeding.
-4. Push code commits to main and require passing online CI for the exact final commit. Run the preparation-only workflow to check real OIDC exchanges, native archives and local container images.
+4. Push code commits to main and require passing online CI for the exact final commit. Run the preparation-only workflow to check package artifacts, native archives and local container images.
 5. Create the version tag locally at that verified commit. Never push it during preparation.
 6. List the concrete publication operations and obtain the user's separate final confirmation.
 7. Push that exact tag. CI automatically completes publication; make no further version/code/documentation edits after approval.
@@ -84,11 +92,11 @@ The tagged commit is the release source. User-facing README, changelog and packa
 
 `Cargo.toml` drives the version and `www/package.json` declares the matching WASM version. Only a version-tag push triggers publication. `wasm-release.yml` is the orchestrator: it builds/publishes the npm and crate packages, calls `release.yml` for eight native archives, calls `build-docker.yml` for amd64/arm64 images and manifests, and publishes the GitHub Release from CHANGELOG.md after all jobs succeed. Docker Hub uses `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`; GHCR uses the built-in GitHub token. Neither a Release event nor workflow_dispatch publishes anything.
 
-Both registries use the configured GitHub OIDC trusted publishers for `jat001/subconverter-rs` and the exact filename `wasm-release.yml`. npm uses its CLI's OIDC authentication; crates.io uses `rust-lang/crates-io-auth-action` and its temporary token. The workflow verifies that the requested version matches the source, skips published versions on retries, and never writes back to main or creates tags. It needs no `NPM_TOKEN`, persistent `CARGO_REGISTRY_TOKEN`, or `PAT_TOKEN`. crates.io requires trusted publishing for new versions. A new npm trusted publisher must complete its first successful OIDC publish within its displayed validation deadline; local publication does not validate that binding.
+Both registries use the configured GitHub OIDC trusted publishers for `jat001/subconverter-rs` and the exact filename `wasm-release.yml`. npm uses its CLI's OIDC authentication; crates.io uses `rust-lang/crates-io-auth-action` and its temporary token only during publication. The workflow verifies that the requested version matches the source, skips published versions on retries, and never writes back to main or creates tags. It needs no `NPM_TOKEN`, persistent `CARGO_REGISTRY_TOKEN`, or `PAT_TOKEN`. crates.io requires trusted publishing for new versions.
 
 `scripts/build-wasm.sh` and `.ps1` only build local packages; they never mutate the source version, commit, tag, push or publish. `--release` / `-Release` and `--optimize` / `-Optimize` select the release compilation profile. The old automatic bump/beta/prepare-release options have been removed. Node remains on LTS 24.x with matching Node types.
 
-Before final confirmation, manually run `wasm-release.yml` on the final commit with its version. This builds packages, verifies both real OIDC exchanges, performs publish dry-runs, builds native archives and tests local amd64/arm64 containers. Publication steps require both `github.event_name == 'push'` and a version-tag ref, including in reusable workflows. Manual runs cannot publish even when they select an existing tag. After confirmation, the only publication operation is pushing the already-created local tag.
+Before final confirmation, manually run `wasm-release.yml` on the final commit with its version. This builds packages, performs publish dry-runs, builds native archives and tests local amd64/arm64 containers. OIDC authentication is part of publication, not a separate preflight check. Publication steps require both `github.event_name == 'push'` and a version-tag ref, including in reusable workflows. Manual runs cannot publish even when they select an existing tag. After confirmation, the only publication operation is pushing the already-created local tag.
 
 ## Architecture
 
