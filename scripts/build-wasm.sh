@@ -116,6 +116,7 @@ else
   rm -rf pkg/workers
 fi
 update_pkg_json "$version"
-pnpm --dir pkg install
+# The generated package lockfile can lag behind the host dependency manifest.
+pnpm --dir pkg install --no-frozen-lockfile
 pnpm --dir www install
 echo "Local WASM packages built for $version in $((SECONDS - BUILD_START_TIME)) seconds"

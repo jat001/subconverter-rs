@@ -46,7 +46,7 @@ its name describes the web application rather than a particular framework.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 24.x (the current LTS)
+- [Node.js](https://nodejs.org/) 26 LTS
 - [pnpm](https://pnpm.io/) 12.x
 - [Rust](https://www.rust-lang.org/) (for building the WebAssembly component)
 
@@ -156,10 +156,13 @@ Dashboard settings (Project configuration):
 | Production branch | `null`, a branch that does not exist, so no build deploys to production by itself |
 | Branch deploys | all branches |
 | Deploy Previews | pull requests against the production branch or a branch deploy branch |
-| Build image | Ubuntu Noble 24.04, whose rustup and Corepack the build script relies on |
-| Node.js | 24.x (the current LTS) |
+| Build image | Ubuntu Noble 24.04, whose rustup the build script uses |
 | Visitor access | Netlify Team Login for non-production deploys (also the team's default): unpublished deploys and their URLs need a Netlify login, the published deploy is public |
 | Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`, with the Functions scope (the API runs as a function) and values for the Branch deploys and Production contexts; the Deploy Previews value is left empty, which turns the admin API off there. Netlify Blobs needs no configuration |
+
+The repository's root `.node-version` selects Node.js 26 for builds. Netlify selects the Functions
+runtime from the build version and can fall back to Node.js 24 while Node.js 26 is in preview on
+AWS Lambda.
 
 Production deploys consume credits while branch deploys and Deploy Previews are free, so nothing deploys
 to production automatically: every push builds a branch deploy, and a finished deploy of `main` goes live
@@ -172,8 +175,9 @@ The framework preset is `null` (Other). Vite remains the frontend build tool; th
 build, output and proxy entry settings provide what this project needs without a framework preset.
 The Git integration builds every push from source on Vercel's Linux build machines: `vercel.json` runs
 `scripts/vercel-install.sh` as the install command, which builds the WASM package (Rust, release
-profile, Node target only) before installing www, then `vite build`. `proxy.entrypoint` selects
-`vercel/index.ts` as Node.js Routing Middleware, with `/api/:path*` as the matcher. It returns the
+profile, Node target only) before installing www. `npm run build` then runs Vite.
+`proxy.entrypoint` selects `vercel/index.ts` as Node.js Routing Middleware for `/api/:path*`.
+The `engines.node` field in `www/package.json` selects Node.js 26. The middleware returns the
 Hono API response directly; pages and assets do not run it, and no `api/` forwarding file or API
 rewrite is needed. Prefer that over `vercel build` /
 `vercel deploy --prebuilt` from Windows, where the current Vercel CLI stores symlink targets verbatim
@@ -195,7 +199,6 @@ too; `vercel.json` overrides them, so keep the two the same:
 | --- | --- |
 | Root Directory | `www` |
 | Include files outside the root directory in the Build Step | enabled, the install script builds from the repository root |
-| Node.js Version | 24.x; `engines.node` in `package.json` takes precedence anyway |
 | Production branch | `main`; other branches and pull requests get preview deployments |
 | Deployment Protection | Vercel Authentication, Standard Protection: previews need a Vercel login, the production domain is public |
 | Environment variables | `ADMIN_TOKEN`, optionally `GITHUB_TOKEN`; an Upstash Redis store connected from the Marketplace provides `KV_REST_API_URL` and `KV_REST_API_TOKEN` (without one, files are only kept in memory) |
@@ -257,10 +260,9 @@ and deploys the Worker. Settings > Build:
 | Build variables | `SKIP_DEPENDENCY_INSTALL=1` (www installs only after `../pkg` is built), `PNPM_VERSION=12` |
 | Build cache | enabled |
 
-Workers Builds caches the pnpm store plus the output directories of frameworks it detects, none of
-which applies to a Vite SPA, so the script keeps the Rust toolchain, cargo registry, build artifacts and
-wasm-pack's tools inside the cached pnpm store directory to reuse them between builds. wasm-opt runs
-through `scripts/wasm-opt-cache.sh`, which reuses the previous output when the Rust code did not change.
+Workers Builds reads `www/.node-version`, a symlink to the repository's root version file. The build
+script keeps the Rust toolchain, Cargo registry, build artifacts and wasm-pack's tools in the cached
+pnpm store. `scripts/wasm-opt-cache.sh` reuses optimized WASM when the input stays the same.
 
 ## License
 

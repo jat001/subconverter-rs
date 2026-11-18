@@ -116,7 +116,8 @@ try {
     if ($NoWorkers) { Remove-BuildDirectory 'pkg/workers' }
     else { Build-WorkersPkg $profile }
     Update-PkgJson $sourceVersion
-    pnpm --dir pkg install
+    # The generated package lockfile can lag behind the host dependency manifest.
+    pnpm --dir pkg install --no-frozen-lockfile
     if ($LASTEXITCODE -ne 0) { throw 'Package dependency install failed' }
     pnpm --dir www install
     if ($LASTEXITCODE -ne 0) { throw 'Web dependency install failed' }

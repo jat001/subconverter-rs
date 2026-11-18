@@ -19,7 +19,7 @@ pnpm typecheck
 pnpm test        # builds, then runs the node:test suite against dist/
 ```
 
-`scripts/build-wasm.sh` / `build-wasm.ps1` run `pnpm build` before wasm-pack, and the release workflow fails if the committed `dist/` does not match `src/`. Requires Node.js 24 and pnpm 12.
+`scripts/build-wasm.sh` / `build-wasm.ps1` run `pnpm build` before wasm-pack, and the release workflow fails if the committed `dist/` does not match `src/`. Requires Node.js 26 LTS and pnpm 12.
 
 The tests run against the compiled `dist/kv_bindings.js` with Node's built-in test runner. The Workers runtime module (`cloudflare:workers`) and the storage clients (`@upstash/redis`, `@netlify/blobs`) are replaced with fakes through `module.registerHooks`, so every backend is covered without network access.
 

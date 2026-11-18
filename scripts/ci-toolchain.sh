@@ -6,7 +6,7 @@
 # put the toolchain (~700 MB, the largest part), cargo's home or the build artifacts somewhere else than
 # $cache, e.g. where the platform caches them itself. Call ci_toolchain_cleanup after building.
 
-WASM_PACK_VERSION=0.15.0
+WASM_PACK_VERSION=0.15.1
 JQ_VERSION=1.8.2
 
 bin="$cache/bin"
@@ -56,6 +56,16 @@ if ! command -v jq >/dev/null; then
   curl -sSfL -o "$bin/jq" "https://github.com/jqlang/jq/releases/download/jq-$JQ_VERSION/jq-linux-amd64"
   chmod +x "$bin/jq"
 fi
+
+# Use the platform's pnpm 12 if available, or install it without relying on Corepack.
+ci_ensure_pnpm() {
+  local pnpm_major=12
+  if [ "$(pnpm --version 2>/dev/null | cut -d. -f1)" != "$pnpm_major" ]; then
+    echo "Installing pnpm $pnpm_major..."
+    npm install --global --prefix "$cache/pnpm" "pnpm@$pnpm_major"
+    export PATH="$cache/pnpm/bin:$PATH"
+  fi
+}
 
 # Extracted crate sources are recreated from registry/cache on demand; no need to cache them twice
 ci_toolchain_cleanup() {

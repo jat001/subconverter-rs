@@ -22,6 +22,7 @@ fi
 
 # shellcheck source=ci-toolchain.sh
 source "$repo_root/scripts/ci-toolchain.sh"
+ci_ensure_pnpm
 
 cd "$repo_root"
 # Builds wasm-host and the nodejs package in release mode (Vercel runs it on Node), then installs www

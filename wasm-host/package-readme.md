@@ -1,6 +1,6 @@
 # @jat/subconverter-wasm
 
-Convert proxy subscriptions with the subconverter-rs Rust engine, compiled to WebAssembly for Node.js and Cloudflare Workers. Use Node.js 24 LTS for the Node build.
+Convert proxy subscriptions with the subconverter-rs Rust engine, compiled to WebAssembly for Node.js and Cloudflare Workers. Use Node.js 26 LTS for new Node deployments.
 
 ## Install
 

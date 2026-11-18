@@ -32,7 +32,7 @@ cargo check --target wasm32-unknown-unknown
 ./scripts/build-wasm.sh                      # needs wasm-pack, jq, pnpm
 ./scripts/build-wasm.sh --optimize           # same with release-profile WASM (Workers deploys), no version changes
 
-# Frontend (www/, Node >= 24, pnpm; never npx in pnpm projects, use pnpm exec / pnpm dlx)
+# Frontend (www/, Node 26 LTS, pnpm; never npx in pnpm projects, use pnpm exec / pnpm dlx)
 cd www && pnpm install && pnpm dev           # SPA plus the API in Node (@hono/vite-dev-server)
 pnpm rebuild:wasm:dev                        # rebuild wasm then start dev server
 pnpm lint
@@ -94,7 +94,7 @@ The tagged commit is the release source. User-facing README, changelog and packa
 
 Both registries use the configured GitHub OIDC trusted publishers for `jat001/subconverter-rs` and the exact filename `wasm-release.yml`. npm uses its CLI's OIDC authentication; crates.io uses `rust-lang/crates-io-auth-action` and its temporary token only during publication. The workflow verifies that the requested version matches the source, skips published versions on retries, and never writes back to main or creates tags. It needs no `NPM_TOKEN`, persistent `CARGO_REGISTRY_TOKEN`, or `PAT_TOKEN`. crates.io requires trusted publishing for new versions.
 
-`scripts/build-wasm.sh` and `.ps1` only build local packages; they never mutate the source version, commit, tag, push or publish. `--release` / `-Release` and `--optimize` / `-Optimize` select the release compilation profile. The old automatic bump/beta/prepare-release options have been removed. Node remains on LTS 24.x with matching Node types.
+`scripts/build-wasm.sh` and `.ps1` only build local packages; they never mutate the source version, commit, tag, push or publish. `--release` / `-Release` and `--optimize` / `-Optimize` select the release compilation profile. The old automatic bump/beta/prepare-release options have been removed. Builds use Node.js 26 LTS with matching Node types.
 
 Before final confirmation, manually run `wasm-release.yml` on the final commit with its version. This builds packages, performs publish dry-runs, builds native archives and tests local amd64/arm64 containers. OIDC authentication is part of publication, not a separate preflight check. Publication steps require both `github.event_name == 'push'` and a version-tag ref, including in reusable workflows. Manual runs cannot publish even when they select an existing tag. After confirmation, the only publication operation is pushing the already-created local tag.
 
