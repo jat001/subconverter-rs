@@ -159,20 +159,29 @@ jobs:
         with:
           name: registry-packages
           path: target/release-assets
-      - name: Read release notes from CHANGELOG
+      - name: Read release notes from changelogs
         run: |
-          awk -v version="$RELEASE_VERSION" '
-            /^## / {
-              if (in_release_section) {
-                exit
+          read_changelog() {
+            awk -v version="$RELEASE_VERSION" '
+              /^## / {
+                if (in_release_section) {
+                  exit
+                }
+                in_release_section = ($2 == version)
+                next
               }
-              in_release_section = ($2 == version)
-              next
-            }
-            in_release_section {
-              print
-            }
-          ' CHANGELOG.md > target/release-notes.md
+              in_release_section {
+                print
+              }
+            ' "$1"
+          }
+          notes_zh="$(read_changelog CHANGELOG.md)"
+          notes_en="$(read_changelog CHANGELOG.en.md)"
+          if [[ -z "$notes_zh" || -z "$notes_en" ]]; then
+            echo "::error::Both changelogs must contain release notes for $RELEASE_VERSION"
+            exit 1
+          fi
+          printf '## 中文\n%s\n\n## English\n%s\n' "$notes_zh" "$notes_en" > target/release-notes.md
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
