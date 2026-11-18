@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
 
   "name": "subconverter-rs",
-  "compatibility_date": "2026-10-01",
+  "compatibility_date": "2026-11-18",
 
   "main": "worker/index.ts",
 
