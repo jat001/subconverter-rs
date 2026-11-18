@@ -4,7 +4,7 @@
   "framework": null,
   "devCommand": "pnpm run dev --port $PORT",
   "installCommand": "bash ../scripts/vercel-install.sh",
-  "buildCommand": "npm run build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "./dist",
 
   "fluid": true,
