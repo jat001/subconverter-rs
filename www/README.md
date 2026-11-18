@@ -175,7 +175,8 @@ The framework preset is `null` (Other). Vite remains the frontend build tool; th
 build, output and proxy entry settings provide what this project needs without a framework preset.
 The Git integration builds every push from source on Vercel's Linux build machines: `vercel.json` runs
 `scripts/vercel-install.sh` as the install command, which builds the WASM package (Rust, release
-profile, Node target only) before installing www. `pnpm run build` then runs Vite.
+profile, Node target only) before installing www. The build command adds the cached pnpm 12
+installation to `PATH` before running `pnpm run build`.
 `proxy.entrypoint` selects `vercel/index.ts` as Node.js Routing Middleware for `/api/:path*`.
 The `engines.node` field in `www/package.json` selects Node.js 26. The middleware returns the
 Hono API response directly; pages and assets do not run it, and no `api/` forwarding file or API

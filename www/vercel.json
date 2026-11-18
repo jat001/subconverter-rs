@@ -4,7 +4,7 @@
   "framework": null,
   "devCommand": "pnpm run dev --port $PORT",
   "installCommand": "bash ../scripts/vercel-install.sh",
-  "buildCommand": "pnpm run build",
+  "buildCommand": "PATH=\"$PWD/node_modules/.cache/vercel-build/pnpm/bin:$PATH\" pnpm run build",
   "outputDirectory": "./dist",
 
   "fluid": true,
