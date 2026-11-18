@@ -26,8 +26,16 @@ fi
 rustup toolchain install stable --profile minimal --target wasm32-unknown-unknown
 rustup default stable
 
+# An incomplete cache restore can leave rustup's metadata intact but omit compiler libraries.
+if ! rustc_version="$(rustc -V)"; then
+  echo "Reinstalling the broken stable Rust toolchain..."
+  rustup toolchain uninstall stable
+  rustup toolchain install stable --profile minimal --target wasm32-unknown-unknown
+  rustup default stable
+  rustc_version="$(rustc -V)"
+fi
+
 # Artifacts from another compiler version are never reused, so drop them instead of caching them
-rustc_version="$(rustc -V)"
 if [ "$(cat "$CARGO_TARGET_DIR/.rustc-version" 2>/dev/null)" != "$rustc_version" ]; then
   rm -rf "$CARGO_TARGET_DIR"
   mkdir -p "$CARGO_TARGET_DIR"
